@@ -4,6 +4,7 @@ class Data():
         self.poleHlasenie = {}
         self.nactiZastavkyNazvy()
         self.nactiTrasy()
+        self.nactiHlasenie("SK")
 
     def nactiZastavkyNazvy(self):
         try:
@@ -33,16 +34,16 @@ class Data():
             
             for IDtrasa in self.poleTrasyID:
                 poleTrasyTemp = []
-                SQLdbTrasy.execute('select * from `?` where `zastavkaID`',str(IDtrasa[0]))
+                SQLdbTrasy.execute('select * from `'+str(IDtrasa[0])+'` where `zastavkaID`')
                 for zastavkaTrasy in SQLdbTrasy.fetchall():
                     poleTrasyTemp.append(zastavkaTrasy[1])
                 self.poleTrasy[IDtrasa[0]] = poleTrasyTemp
                 
-     def nactiHlasenie(self, jazyk):
+    def nactiHlasenie(self, jazyk):
         try:
-            dbHlasenie = sqlite3.connect("data/hlasenie.dat")
+            dbHlasenie = sqlite3.connect("data/hlasenie_"+jazyk+".dat")
         except sqlite3.OperationalError:
-            input("Chyba čítanie modulu hlasenie.dat")
+            input("Chyba čítanie modulu hlasenie_"+jazyk+".dat")
         else:
             SQLdbHlasenie = dbHlasenie.cursor()
             poleHlasenie = {}
@@ -65,11 +66,19 @@ class Data():
             SQLdbHlasenie.execute('select * from `nastupiste` where `cestaKSuboru`')
             for nastupiste in SQLdbHlasenie.fetchall():
                 poleHlasenie[nastupiste[0]] = nastupiste[1]
-                
+            
             SQLdbHlasenie.execute('select * from `vety` where `cestaKSuboru`')
             for veta in SQLdbHlasenie.fetchall():
-                poleHlasenie[veta[0]] = veta[1]    
+                poleHlasenie[veta[0]] = veta[1]
+            
+            SQLdbHlasenie.execute('select * from `dopravcia` where `cestaKSuboru`')
+            for dopravce in SQLdbHlasenie.fetchall():
+                poleHlasenie[dopravce[0]] = dopravce[1]
+            
+            SQLdbHlasenie.execute('select * from `znelky` where `cestaKSuboru`')
+            for znelka in SQLdbHlasenie.fetchall():
+                poleHlasenie[znelka[0]] = znelka[1]
                 
-            self.poleHlasenie[jazyk) = poleHlasenie
+            self.poleHlasenie[jazyk] = poleHlasenie
             
 d = Data()
