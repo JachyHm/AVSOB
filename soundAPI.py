@@ -12,16 +12,16 @@ from operator import itemgetter
 CHUNK = 1024
 
 class soundAPI():
-    def __init__(self):
+    def __init__(self, objektData):
         # inicializacia API pre hlasenie
         self.vypis = vypis.Vypis()
         self.tabulkaHlasenia = []
         self.vypis.nastavVypis(2)
         self.byloPrve = False
         #docasne cesty k znelkam
-        self.startHlasenie = "wav_sk/start.wav"
-        self.konecHlasenia = "wav_sk/end.wav"
-        self.medziHlasenimi = "wav_sk/between.wav"
+        self.startHlasenie = objektData.poleHlasenie["SK"]["znelky"]["start"]
+        self.konecHlasenia = objektData.poleHlasenie["SK"]["znelky"]["koniec"]
+        self.medziHlasenimi = objektData.poleHlasenie["SK"]["znelky"]["medzi"]
         self.vlaknoHlaseni = Thread(target=self.cyklusHlaseni)
         self.vlaknoHlaseni.start()
 
@@ -48,9 +48,9 @@ class soundAPI():
         self.tabulkaHlasenia = sorted(self.tabulkaHlasenia,key=itemgetter(1))
         self.vypis.vypis("Prijaté hlásenie s prioritou "+str(poleHlaseni[1])+" je "+str(self.tabulkaHlasenia.index(poleHlaseni)+1)+". vo fronte!",2)
         if not self.vlaknoHlaseni.is_alive():
+            self.byloPrve = True
             self.vlaknoHlaseni = Thread(target=self.cyklusHlaseni)
             self.vlaknoHlaseni.start()
-            self.byloPrve = True
         
     @staticmethod
     def vyhlas(self,poleHlaseni):

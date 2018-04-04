@@ -1,0 +1,6 @@
+"802401","1","–  spoj è.10 èaká na zastávke Bidovce,èak. na spoje è.18, 20 a 22 linky 802402 z Ïurkova","0";
+"802401","2","–  spoj è.24 èaká v Bidovciach spoj è.70 linky 802447 z Opinej","0";
+"802401","3","Õ  na spoj è.9 nadväzuje v Bidovciach spoj è.9 linky 802402 do Ïurkova","0";
+"802401","4","•  zastávka Michalovce,hotel Druba slúi len na vıstup cestujúcich","0";
+"802401","5","–  spoj è.4 èaká v Ïurïošíku spoj è.15 linky 802448 do Rankoviec","0";
+"802401","6","Õ  na spoj è.17 nadväzuje v Ïurïošíku spoj è.34 linky 802403 do Trsan","0";

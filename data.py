@@ -2,23 +2,36 @@ import sqlite3
 class Data():
     def __init__(self):
         self.poleHlasenie = {}
-        self.nactiZastavkyNazvy()
-        self.nactiTrasy()
-        self.nactiHlasenie("SK")
+        self.NactiZastavkyNazvy()
+        self.NactiTrasy()
+        self.NactiHlasenie("SK")
 
-    def nactiZastavkyNazvy(self):
+    def NactiZastavkyNazvy(self):
         try:
-            dbZastavkyNazvy = sqlite3.connect("data/zastavkyNazvy.dat")
+            dbZastavky = sqlite3.connect("data/zastavky.dat")
         except sqlite3.OperationalError:
             input("Chyba čítanie modulu zastavky.dat!")
         else:            
-            SQLdbZastavkyNazvy = dbZastavkyNazvy.cursor()
-            SQLdbZastavkyNazvy.execute('select * from `zastavkyMena` where `IDzastavky`')
-            self.poleZastavkyJmena = {}
-            for tupleZastavka in SQLdbZastavkyNazvy.fetchall():
-                self.poleZastavkyJmena[tupleZastavka[1]] = tupleZastavka[0]
+            SQLdbZastavky = dbZastavky.cursor()
+            SQLdbZastavky.execute('select * from `zastavkyMena` where `IDzastavky`')
+            self.zastavky = {}
+            for tupleZastavka in SQLdbZastavky.fetchall():
+                self.zastavky[tupleZastavka[1]] = tupleZastavka[0]
+    def NactiSpoje(self):
+        try:
+            dbSpoje = sqlite3.connect("data/spoje.dat")
+        except:
+            input("Chyba čítanie modulu spoje.dat!")
+        else:
+            SQLdbSpoje = dbSpoje.cursor()
+            SQLdbSpoje.execute('select * from `spoje`')
+            self.spoje = {}
+            for tupleSpoj in SQLdbSpoje.fetchall():
+                # self.spoje[tupleSpoj[0]] = 
+                pass
 
-    def nactiTrasy(self):
+
+    def NactiTrasy(self):
         try:
             dbTrasy = sqlite3.connect("data/trasy.dat")
         except sqlite3.OperationalError:
@@ -26,20 +39,20 @@ class Data():
         else:            
             SQLdbTrasy = dbTrasy.cursor()
             SQLdbTrasy.execute('select * from `seznamTras` where `IDtrasy`')
-            self.poleTrasyID = []
+            self.trasyID = []
             for IDtrasa in SQLdbTrasy.fetchall():
-                self.poleTrasyID.append(IDtrasa)
+                self.trasyID.append(IDtrasa)
                     
-            self.poleTrasy = {}
+            self.trasy = {}
             
-            for IDtrasa in self.poleTrasyID:
-                poleTrasyTemp = []
+            for IDtrasa in self.trasyID:
+                trasyTemp = []
                 SQLdbTrasy.execute('select * from `'+str(IDtrasa[0])+'` where `zastavkaID`')
                 for zastavkaTrasy in SQLdbTrasy.fetchall():
-                    poleTrasyTemp.append(zastavkaTrasy[1])
-                self.poleTrasy[IDtrasa[0]] = poleTrasyTemp
-                
-    def nactiHlasenie(self, jazyk):
+                    trasyTemp.append(zastavkaTrasy[1])
+                self.trasy[IDtrasa[0]] = trasyTemp
+
+    def NactiHlasenie(self, jazyk):
         try:
             dbHlasenie = sqlite3.connect("data/hlasenie_"+jazyk+".dat")
         except sqlite3.OperationalError:
@@ -47,38 +60,51 @@ class Data():
         else:
             SQLdbHlasenie = dbHlasenie.cursor()
             poleHlasenie = {}
-            SQLdbHlasenie.execute('select * from `stanice` where `cestaKSuboru`')
+            poleHlasenie["stanice"] = {}
+            poleHlasenie["slova"] = {}
+            poleHlasenie["minuty"] = {}
+            poleHlasenie["hodiny"] = {}
+            poleHlasenie["nastupiste"] = {}
+            poleHlasenie["vety"] = {}
+            poleHlasenie["dopravcia"] = {}
+            poleHlasenie["znelky"] = {}
+            poleHlasenie["typ"] = {}
+
+            SQLdbHlasenie.execute('select * from `stanice`')
             for zastavka in SQLdbHlasenie.fetchall():
-                poleHlasenie[zastavka[0]] = zastavka[1]
+                poleHlasenie["stanice"][zastavka[0]] = zastavka[1]
                 
-            SQLdbHlasenie.execute('select * from `slova` where `cestaKSuboru`')
+            SQLdbHlasenie.execute('select * from `slova`')
             for slovo in SQLdbHlasenie.fetchall():
-                poleHlasenie[slovo[0]] = slovo[1]
+                poleHlasenie["slova"][slovo[0]] = slovo[1]
                 
-            SQLdbHlasenie.execute('select * from `minuty` where `cestaKSuboru`')
+            SQLdbHlasenie.execute('select * from `minuty`')
             for minuta in SQLdbHlasenie.fetchall():
-                poleHlasenie[minuta[0]] = minuta[1]
+                poleHlasenie["minuty"][minuta[0]] = minuta[1]
                 
-            SQLdbHlasenie.execute('select * from `hodiny` where `cestaKSuboru`')
+            SQLdbHlasenie.execute('select * from `hodiny`')
             for hodina in SQLdbHlasenie.fetchall():
-                poleHlasenie[hodina[0]] = hodina[1]
+                poleHlasenie["hodiny"][hodina[0]] = hodina[1]
                 
-            SQLdbHlasenie.execute('select * from `nastupiste` where `cestaKSuboru`')
+            SQLdbHlasenie.execute('select * from `nastupiste`')
             for nastupiste in SQLdbHlasenie.fetchall():
-                poleHlasenie[nastupiste[0]] = nastupiste[1]
+                poleHlasenie["nastupiste"][nastupiste[0]] = nastupiste[1]
             
-            SQLdbHlasenie.execute('select * from `vety` where `cestaKSuboru`')
+            SQLdbHlasenie.execute('select * from `vety`')
             for veta in SQLdbHlasenie.fetchall():
-                poleHlasenie[veta[0]] = veta[1]
+                poleHlasenie["vety"][veta[0]] = veta[1]
             
-            SQLdbHlasenie.execute('select * from `dopravcia` where `cestaKSuboru`')
+            SQLdbHlasenie.execute('select * from `dopravcia`')
             for dopravce in SQLdbHlasenie.fetchall():
-                poleHlasenie[dopravce[0]] = dopravce[1]
+                poleHlasenie["dopravcia"][dopravce[0]] = dopravce[2]
             
-            SQLdbHlasenie.execute('select * from `znelky` where `cestaKSuboru`')
+            SQLdbHlasenie.execute('select * from `znelky`')
             for znelka in SQLdbHlasenie.fetchall():
-                poleHlasenie[znelka[0]] = znelka[1]
-                
-            self.poleHlasenie[jazyk] = poleHlasenie
+                poleHlasenie["znelky"][znelka[0]] = znelka[1]
+
+            SQLdbHlasenie.execute('select * from `typ`')
+            for typ in SQLdbHlasenie.fetchall():
+                print(typ)
+                poleHlasenie["typ"][typ[0]] = typ[1]
             
-d = Data()
+            self.poleHlasenie[jazyk] = poleHlasenie
