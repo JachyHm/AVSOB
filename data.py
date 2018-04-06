@@ -1,41 +1,114 @@
-import sqlite3
+﻿import sqlite3
+cestaKSuborum = "D:/OIS/erik_system/AVSOB/"
 class Data():
     def __init__(self):
         self.poleHlasenie = {}
         self.NactiZastavkyNazvy()
         self.NactiTrasy()
+        self.NactiDatumy()
+        self.NactiSpoje()
         self.NactiHlasenie("SK")
 
     def NactiZastavkyNazvy(self):
         try:
-            dbZastavky = sqlite3.connect("data/zastavky.dat")
+            dbZastavky = sqlite3.connect(cestaKSuborum+"data/zastavky.dat")
         except sqlite3.OperationalError:
-            input("Chyba čítanie modulu zastavky.dat!")
+            pass
+            # input("Chyba čítanie modulu zastavky.dat!")
         else:            
             SQLdbZastavky = dbZastavky.cursor()
             SQLdbZastavky.execute('select * from `zastavkyMena` where `IDzastavky`')
             self.zastavky = {}
             for tupleZastavka in SQLdbZastavky.fetchall():
                 self.zastavky[tupleZastavka[1]] = tupleZastavka[0]
+    
+    def NactiDatumy(self):
+        try:
+            dbDatumy = sqlite3.connect(cestaKSuborum+"data/datumy.dat")
+        except sqlite3.OperationalError:
+            pass
+            # input("Chyba čítanie modulu spoje.dat!")
+        else:
+            SQLdbDatumy = dbDatumy.cursor()
+            SQLdbDatumy.execute('select * from `datumy`')
+            self.datumy = {}
+            for datumovaPoznamka in SQLdbDatumy.fetchall():
+                datum = {}
+                try:
+                    datum["obecnaPlatnost"] = datumovaPoznamka[1].split(",")
+                except:
+                    datum["obecnaPlatnost"] = []
+            
+                try:
+                    datum["jedeTake"] = datumovaPoznamka[2].split(",")
+                except:
+                    datum["jedeTake"] = []
+
+                try:
+                    datum["nejede"] = datumovaPoznamka[3].split(",")
+                except:
+                    datum["nejede"] = []
+
+                self.datumy[datumovaPoznamka[0]] = datum
+
     def NactiSpoje(self):
         try:
-            dbSpoje = sqlite3.connect("data/spoje.dat")
-        except:
-            input("Chyba čítanie modulu spoje.dat!")
+            dbSpoje = sqlite3.connect(cestaKSuborum+"data/spoje.dat")
+        except sqlite3.OperationalError:
+            pass
+            # input("Chyba čítanie modulu spoje.dat!")
         else:
             SQLdbSpoje = dbSpoje.cursor()
             SQLdbSpoje.execute('select * from `spoje`')
             self.spoje = {}
+            self.spojeDlaCasuPrich = {}
+            self.spojeDlaCasuOdch = {}
             for tupleSpoj in SQLdbSpoje.fetchall():
-                # self.spoje[tupleSpoj[0]] = 
-                pass
+                spoj = {}
+                spoj["IDplatnosti"] = tupleSpoj[1]
+                spoj["hlasSK"] = tupleSpoj[2]
+                spoj["hlasEN"] = tupleSpoj[3]
+                spoj["IDtrasyPrichod"] = tupleSpoj[4]
+                spoj["IDtrasyOdchod"] = tupleSpoj[5]
+                spoj["casPrichodu"] = tupleSpoj[6]
+                spoj["casOdchodu"] = tupleSpoj[7]
+                spoj["konci"] = tupleSpoj[8]
+                spoj["zacina"] = tupleSpoj[9]
+                spoj["IDdopravca"] = tupleSpoj[10]
+                spoj["linka"] = tupleSpoj[11]
+                spoj["nastupiste"] = tupleSpoj[12]
+                spoj["typ"] = tupleSpoj[13]
+                self.spoje[tupleSpoj[0]] = spoj
+                if tupleSpoj[9] == 0:
+                    try:
+                        _ = self.spojeDlaCasuPrich[tupleSpoj[6]]
+                    except:
+                        self.spojeDlaCasuPrich[tupleSpoj[6]] = [tupleSpoj[0]]
+                    else:
+                        self.spojeDlaCasuPrich[tupleSpoj[6]].append(tupleSpoj[0])
+                
+                if tupleSpoj[8] == 0:
+                    try:
+                        _ = self.spojeDlaCasuOdch[tupleSpoj[7]]
+                    except:
+                        self.spojeDlaCasuOdch[tupleSpoj[7]] = [tupleSpoj[0]]
+                    else:
+                        self.spojeDlaCasuOdch[tupleSpoj[7]].append(tupleSpoj[0])
 
+                self.spojeDlaCasuPrichPride = self.spojeDlaCasuPrich
+                self.spojeDlaCasuPrichPrideDruhy = self.spojeDlaCasuPrich
+                self.spojeDlaCasuPrichPrichadza = self.spojeDlaCasuPrich
+                self.spojeDlaCasuPrichPrisiel = self.spojeDlaCasuPrich
+                self.spojeDlaCasuOdchBudePristaveny = self.spojeDlaCasuOdch
+                self.spojeDlaCasuOdchBudePristavenyDruhe = self.spojeDlaCasuOdch
+            
 
     def NactiTrasy(self):
         try:
-            dbTrasy = sqlite3.connect("data/trasy.dat")
+            dbTrasy = sqlite3.connect(cestaKSuborum+"data/trasy.dat")
         except sqlite3.OperationalError:
-            input("Chyba čítanie modulu trasy.dat!")
+            pass
+            # input("Chyba čítanie modulu trasy.dat!")
         else:            
             SQLdbTrasy = dbTrasy.cursor()
             SQLdbTrasy.execute('select * from `seznamTras` where `IDtrasy`')
@@ -54,9 +127,10 @@ class Data():
 
     def NactiHlasenie(self, jazyk):
         try:
-            dbHlasenie = sqlite3.connect("data/hlasenie_"+jazyk+".dat")
+            dbHlasenie = sqlite3.connect(cestaKSuborum+"data/hlasenie_"+jazyk+".dat")
         except sqlite3.OperationalError:
-            input("Chyba čítanie modulu hlasenie_"+jazyk+".dat")
+            pass
+            # input("Chyba čítanie modulu hlasenie_"+jazyk+".dat")
         else:
             SQLdbHlasenie = dbHlasenie.cursor()
             poleHlasenie = {}
@@ -69,10 +143,12 @@ class Data():
             poleHlasenie["dopravcia"] = {}
             poleHlasenie["znelky"] = {}
             poleHlasenie["typ"] = {}
+            poleHlasenie["stanice_umisteni"] = {}
+            poleHlasenie["cestaKSuborum"] = cestaKSuborum
 
             SQLdbHlasenie.execute('select * from `stanice`')
-            for zastavka in SQLdbHlasenie.fetchall():
-                poleHlasenie["stanice"][zastavka[0]] = zastavka[1]
+            for stanica in SQLdbHlasenie.fetchall():
+                poleHlasenie["stanice"][stanica[0]] = stanica[1]
                 
             SQLdbHlasenie.execute('select * from `slova`')
             for slovo in SQLdbHlasenie.fetchall():
@@ -104,7 +180,10 @@ class Data():
 
             SQLdbHlasenie.execute('select * from `typ`')
             for typ in SQLdbHlasenie.fetchall():
-                print(typ)
                 poleHlasenie["typ"][typ[0]] = typ[1]
+
+            SQLdbHlasenie.execute('select * from `stanice_umisteni`')
+            for stanica in SQLdbHlasenie.fetchall():
+                poleHlasenie["stanice_umisteni"] = stanica[1]
             
             self.poleHlasenie[jazyk] = poleHlasenie
