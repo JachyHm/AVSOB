@@ -1,1 +1,9 @@
-"802401","Koöice - SeËovce - Michalovce - Sobrance - VyönÈ NemeckÈ","36211079","V","A","0","0","0","0","","","","","04032018","08122018","18020","0";
+"802422","Koöice - Koöice,USS - Kom·rovce - PerÌn-Chym - Buzica - Reöica","36211079","V","A","0","0","0","0","","","","","07042018","08122018","18020","0";
+"802423","Koöice - Koöice,USS - Veæk· Ida - Kom·rovce - Buzica - Reöica","36211079","V","A","0","0","0","0","","","","","07042018","08122018","18020","0";
+"802427","Koöice - Jasov - PoproË - Medzev - ätÛs - ätÛs, ätÛs,k˙pele - SmolnÌk","36211079","V","A","0","0","0","0","","","","","07042018","08122018","18020","0";
+"802428","Koöice - Koöice,USS - Mal· Ida - PoproË - Medzev - Vyön˝ Medzev","36211079","V","A","0","0","0","0","","","","","07042018","08122018","18020","0";
+"802450","Koöice - Koöice,USS - Cestice - Mokrance - Moldava n. B. - Z·diel - TurÚa n. B. / DvornÌky-VËel·re","36211079","V","A","0","0","0","0","","","","","07042018","08122018","18020","0";
+"802452","Koöice - Koöice,USS - Cestice - PaÚovce - Mokrance - Moldava n. B. - éarnov - JanÌk - Moldava n. B.","36211079","V","A","0","0","0","0","","","","","07042018","08122018","18020","0";
+"802453","Koöice - Koöice,USS - Mokrance - Moldava n. B. - TurÚa n. B. - Hosùovce - TurÚa n. B. -Moldava n. B.","36211079","V","A","0","0","0","0","","","","","07042018","08122018","18020","0";
+"802454","Koöice - Koöice,USS - Cestice - Mokrance - Moldava n. B. - TurÚa n.B - Jablonov n. T. - S. Jablonica","36211079","V","A","0","0","0","0","","","","","07042018","08122018","18020","0";
+"808405","Doböin· - RoûÚava - Moldava nad Bodvou - Koöice","362110793","V","A","0","0","0","0","","","","","07042018","08122018","18080","0";

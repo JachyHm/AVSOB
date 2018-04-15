@@ -35,7 +35,7 @@ class Data():
             for datumovaPoznamka in SQLdbDatumy.fetchall():
                 datum = {}
                 try:
-                    datum["obecnaPlatnost"] = datumovaPoznamka[1].split(",")
+                    datum["obecnaPlatnost"] = datumovaPoznamka[0].split(",")
                 except:
                     datum["obecnaPlatnost"] = []
             
@@ -95,12 +95,13 @@ class Data():
                     else:
                         self.spojeDlaCasuOdch[tupleSpoj[7]].append(tupleSpoj[0])
 
-                self.spojeDlaCasuPrichPride = self.spojeDlaCasuPrich
-                self.spojeDlaCasuPrichPrideDruhy = self.spojeDlaCasuPrich
-                self.spojeDlaCasuPrichPrichadza = self.spojeDlaCasuPrich
-                self.spojeDlaCasuPrichPrisiel = self.spojeDlaCasuPrich
-                self.spojeDlaCasuOdchBudePristaveny = self.spojeDlaCasuOdch
-                self.spojeDlaCasuOdchBudePristavenyDruhe = self.spojeDlaCasuOdch
+            self.spojeDlaCasuPrichPride = self.spojeDlaCasuPrich
+            self.spojeDlaCasuPrichPrideDruhy = self.spojeDlaCasuPrich
+            self.spojeDlaCasuPrichPrichadza = self.spojeDlaCasuPrich
+            self.spojeDlaCasuPrichPrisiel = self.spojeDlaCasuPrich
+            self.spojeDlaCasuOdchBudePristaveny = self.spojeDlaCasuOdch
+            self.spojeDlaCasuOdchBudePristavenyDruhe = self.spojeDlaCasuOdch
+            print(self.spojeDlaCasuPrich)
             
 
     def NactiTrasy(self):
@@ -172,7 +173,7 @@ class Data():
             
             SQLdbHlasenie.execute('select * from `dopravcia`')
             for dopravce in SQLdbHlasenie.fetchall():
-                poleHlasenie["dopravcia"][dopravce[0]] = dopravce[2]
+                poleHlasenie["dopravcia"][dopravce[1]] = dopravce[2]
             
             SQLdbHlasenie.execute('select * from `znelky`')
             for znelka in SQLdbHlasenie.fetchall():

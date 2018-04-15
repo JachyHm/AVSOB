@@ -31,25 +31,25 @@ class Main():
     def beh(self, 
             # objektSluzby
             ):
-        # self.vyhlas.BudePristaveny(self,"Mbus",2,19,"19:43",13,False)
+        # self.vyhlas.BudePristaveny(self,"Mbus","Eurobus",9,"14:06",13,False)
         # self.vyhlas.BudePristaveny(self,"Mbus",2,19,"19:43",13,False,True)
         # self.vyhlas.Stoji(self,"Mbus",2,1,19,"19:43",13,False)
         # self.vyhlas.Stoji(self,"Mbus",2,1,19,"19:43",13,False,True)
         # self.vyhlas.OdidePriNast(self,"Mbus",2,19,"19:43",13,False)
-        # self.vyhlas.OdidePriNast(self,"Mbus",2,19,"19:43",13,False,True)
+        # self.vyhlas.OdidePriNast(self,"Pbus","Eurobus",9,"14:06",13,False,True)
         # self.vyhlas.PrideTranzitny(self,"Mbus",2,1,19,"19:41","19:43",13,False)
         # self.vyhlas.PrideTranzitny(self,"Mbus",2,1,19,"19:41","19:43",13,False,True)
-        # self.vyhlas.PrichadzaTranzitny(self,"Mbus",2,1,19,"19:41","19:43",13,False)
+        # self.vyhlas.PrichadzaTranzitny(self,"Rbus","Eurobus",1,9,"14:06","14:08",13,False)
         # self.vyhlas.PrichadzaTranzitny(self,"Mbus",2,1,19,"19:41","19:43",13,False,True)
         # self.vyhlas.PrisielTranzitny(self,"Mbus",2,1,19,"19:41","19:43",13,False,False,False)
         # self.vyhlas.PrisielTranzitny(self,"Mbus",2,1,19,"19:41","19:43",13,False,True,False)
         # self.vyhlas.PrisielTranzitny(self,"Mbus",2,1,19,"19:41","19:43",13,False,False,True)
         # self.vyhlas.PrisielTranzitny(self,"Mbus",2,1,19,"19:41","19:43",13,False,True,True)
-        # self.vyhlas.PrideKonciaci(self,"Mbus",2,1,"19:43",13,False)
+        # self.vyhlas.PrideKonciaci(self,"Mbus","Eurobus",1,"14:06",13,False)
         # self.vyhlas.PrideKonciaci(self,"Mbus",2,1,"19:43",13,False,True)
         # self.vyhlas.PrichadzaKonciaci(self,"Mbus",2,1,13,False)
         # self.vyhlas.PrichadzaKonciaci(self,"Mbus",2,1,13,False,True)
-        # self.vyhlas.PrisielKonciaci(self,"Mbus",2,1,"19:41",13,False)
+        # self.vyhlas.PrisielKonciaci(self,"Mbus","Eurobus",1,"14:06",13,False)
         # self.vyhlas.PrisielKonciaci(self,"Mbus",2,1,"19:41",13,False,True)
         while True:
 
@@ -250,7 +250,7 @@ class Main():
 
                         self.vyhlas.PrichadzaTranzitny(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["IDtrasyOdchod"],spoj["casPrichodu"],spoj["casOdchodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
 
-
+            
             #pole prisel spoju k vyhlaseni
             vyhlasPrisel = self.data.spojeDlaCasuPrichPrisiel.pop(cas,[])
 
@@ -264,7 +264,8 @@ class Main():
                 #zisti, ci dnes spoj ide
                 jedeDnes = False
                 try:
-                    self.data.datumy[spoj["IDplatnosti"]]["obecnaPlatnost"].index(denVTydnu)
+                    # self.data.datumy[int(spoj["IDplatnosti"])]["obecnaPlatnost"].index(denVTydnu)
+                    pass
                 except:
                     try:
                         self.data.datumy[spoj["IDplatnosti"]]["jedeTake"].index(datum)
@@ -822,7 +823,7 @@ class Vyhlas():
         zahlasSubory.append(objektMain.data.poleHlasenie["SK"]["typ"][typ])
         # typ autobusu
 
-        zahlasSubory.append(objektMain.data.poleHlasenie["SK"]["dopravcia"][spolocnost])
+        zahlasSubory.append(objektMain.data.poleHlasenie["SK"]["dopravcia"][str(spolocnost)])
         # spolocnost
 
         zahlasSubory.append(objektMain.data.poleHlasenie["SK"]["vety"]["zoSmeru"])
@@ -843,6 +844,9 @@ class Vyhlas():
         # pravidelny prichod
 
         hodiny,minuty = prichod.split(":")
+        while len(minuty) < 2:
+            minuty = "0"+minuty
+            
         zahlasSubory.append(objektMain.data.poleHlasenie["SK"]["hodiny"][int(hodiny)])
         zahlasSubory.append(objektMain.data.poleHlasenie["SK"]["minuty"][str(minuty)])
         # cas prichodu
