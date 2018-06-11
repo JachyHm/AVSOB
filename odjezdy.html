@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="cs">
+    <head>
+        <title>AVSOB</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="Description" CONTENT="Web rozhraní aplikace AVSOB.">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <script type="text/javascript" src="jquery-3.3.1.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        <script src="moment.js"></script>
+        <script>
+            $(document).ready(function() {
+                console.log("Stránka načtená!");
+                document.getElementById("page_content").style.width="100%";
+                blikej();
+                setTimeout(function(){location.reload()}, 60000);
+            });
+        </script>
+        <style>
+            .bg-hlavicka { 
+                background-color: #ffffff;
+                color: #575757;
+            }
+            .prichody {
+                text-align: left;
+            }
+            h1 {
+                font-size: 72px;
+            }
+            .table-hover {
+                font-size: 30px;
+            }
+            .blink{
+                animation: blink 1s infinite;
+            }
+            @keyframes blink{
+                0%{opacity: 1;}
+                75%{opacity: 1;}
+                76%{ opacity: 0;}
+                100%{opacity: 0;}
+            }
+        </style>
+    </head>
+    <body>
+        <div id="page_content" class="container-fluid text-center" style="width: 70%;">
+            <div id="hlavicka" class="container-fluid bg-hlavicka">
+                <div class="container-fluid">
+                    <h1>
+                        <div id="nadpis">Stanice TEST</div>
+                    </h1>
+                </div>
+            </div>
+            <div id="prichody" class="prichody">
+                <div class="table-responsive">
+                    <table id="tabulkaAutobusy" class="table table-hover">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th scope="col">Linka</th>
+                                <th scope="col">Zo smeru</th>
+                                <th scope="col">Príchod</th>
+                                <th scope="col">Smer</th>
+                                <th scope="col">Odchod</th>
+                                <th scope="col">Nástupiste</th>
+                                <th scope="col">Meskanie</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>804211</td>
+                                <td><marquee>Praha,,Florenc</marquee></td>
+                                <td>14:25</td>
+                                <td><marquee>Adolfov</marquee></td>
+                                <td>14:25</td>
+                                <td>41</td>
+                                <td>*</td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <script>
+                function blikej() {
+                    var table = document.getElementById("tabulkaAutobusy");
+                    var rows = table.getElementsByTagName("tr");
+                    for (i = 0; i < rows.length; i++) {
+                        var currentRow = rows[i];
+                        var cell = currentRow.getElementsByTagName("td")[4];
+                        if (cell && cell.innerHTML != "") {
+                            var casOdjezd = moment(cell.innerHTML, "hh:mm");
+                            if (casOdjezd <= moment()) {
+                                cell.className = "blink";
+                            }
+                        }
+                    }
+                }
+            </script>
+            <div id="footer" class="navbar navbar-fixed-bottom">
+                <big>Informačný systém AVSOB&copy; | Made by URBANO 2018</big>
+            </div>
+        </div>
+    </body>
+</html>

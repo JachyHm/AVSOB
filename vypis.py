@@ -17,5 +17,7 @@ class Vypis():
                                             0, # Event category
                                             win32evtlog.EVENTLOG_INFORMATION_TYPE,
                                             ("AVSOB", time.strftime("%H:%M:%S ")+levelSlovnik[level]+str(zprava)))
+                                            
+                print(time.strftime("%H:%M:%S ")+levelSlovnik[level]+str(zprava))
             else:
                 input(time.strftime("%H:%M:%S ")+levelSlovnik[level]+str(zprava))

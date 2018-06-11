@@ -223,6 +223,13 @@ def nacti():
                             try:
                                 linky[int(radek[0])]["spoje"][int(radek[1])]
                             except:
+                                try:
+                                    linky[int(radek[0])]
+                                except:
+                                    chyba = i
+                                    chybaPopis = "Nedefinovana linka "+str(int(radek[0]))+" nelze pokracovat!"
+                                    break
+
                                 linky[int(radek[0])]["spoje"][int(radek[1])] = {}
                                 linky[int(radek[0])]["spoje"][int(radek[1])]["casKody"] = []
                                 linky[int(radek[0])]["spoje"][int(radek[1])]["obecnaPlatnost"] = []
@@ -340,8 +347,9 @@ def nacti():
                                 datumovePoznamky[int(radek[3])]["jedeJenVSudychTydnechOd"] = radek[5]
                                 datumovePoznamky[int(radek[3])]["jedeJenVSudychTydnechDo"] = radek[6]
 
-                except:
+                except Exception as e:
                     chyba = i
+                    chybaPopis = e
                     break
 
             try:
@@ -351,6 +359,7 @@ def nacti():
             else:
                 print(" ["+Fore.RED+"CHYBA"+Style.RESET_ALL+"]")
                 print(Fore.RED+"Na riadku {} v subore casKody.txt je chyba, overte integritu dat!".format(chyba)+Style.RESET_ALL)
+                print(chybaPopis)
                 return()
     except:
         print(" ["+Fore.RED+"CHYBA"+Style.RESET_ALL+"]")
@@ -427,18 +436,27 @@ def nacti():
             print("Zpracovavam subor se spoji spoje.txt...                               ",end="")
             for i,radek in enumerate(radky):
                 try:
-                    for i, obsah in enumerate(radek):
-                        if i >= 2 and i <= 11:
+                    for a, obsah in enumerate(radek):
+                        try:
+                            linky[int(radek[0])]
+                        except:
+                            print("nedefinovana linka "+str(radek[0]))
+                            linky[int(radek[0])] = {}
+                            linky[int(radek[0])]["spoje"] = {}
+                            linky[int(radek[0])]["dopravce"] = ""
+                            linky[int(radek[0])]["typ"] = "PBus"
+
+                        if a >= 2 and a <= 11:
                             try:
                                 obsah = pevneKody[int(obsah)]
                             except:
-                                if i == 2 and obsah == "":
+                                if a == 2 and obsah == "":
                                     try:
                                         linky[int(radek[0])]["spoje"][int(radek[1])]
                                     except:
-                                        linky[int(radek[0])]["spoje"][int(radek[1])] = {}
-                                        linky[int(radek[0])]["spoje"][int(radek[1])]["casKody"] = []
-                                        linky[int(radek[0])]["spoje"][int(radek[1])]["obecnaPlatnost"] = []
+                                        chyba = i
+                                        chybaPopis = "Nedefinovana linka "+str(int(radek[0]))+" nelze pokracovat!"
+                                        break
 
                                     linky[int(radek[0])]["spoje"][int(radek[1])]["obecnaPlatnost"] = [1,2,3,4,5,6,7,8]
                                 if obsah == "":
@@ -511,6 +529,8 @@ def nacti():
             shodaPrichod = False
             shodaOdchod = False
             nastupiste = 0
+            IDtrasaPrichod = ""
+            IDtrasaOdchod = ""
             try:
                 # prace so suborom
                 try:
@@ -531,6 +551,9 @@ def nacti():
                             if trasa == trasaPrichod:
                                 IDtrasaPrichod = idTrasy
                                 shodaPrichod = True
+                            if trasa == trasaOdchod:
+                                IDtrasaOdchod = idTrasy
+                                shodaOdchod = True
 
                         if not shodaPrichod:
                             if len(trasaPrichod) > 0:
@@ -539,11 +562,6 @@ def nacti():
                             else:
                                 IDtrasaPrichod = ""
                         
-                        for idTrasy,trasa in enumerate(trasy):
-                            if trasa == trasaOdchod:
-                                IDtrasaOdchod = idTrasy
-                                shodaOdchod = True
-
                         if not shodaOdchod:
                             if len(trasaOdchod) > 0:
                                 trasy.append(trasaOdchod)
@@ -551,8 +569,8 @@ def nacti():
                             else:
                                 IDtrasaOdchod = ""
                         
-                        linky[int(radek[0])]["spoje"][int(radek[1])]["trasaPrichod"] = IDtrasaPrichod
-                        linky[int(radek[0])]["spoje"][int(radek[1])]["trasaOdchod"] = IDtrasaOdchod
+                        linky[minulaLinka]["spoje"][minulySpoj]["trasaPrichod"] = IDtrasaPrichod
+                        linky[minulaLinka]["spoje"][minulySpoj]["trasaOdchod"] = IDtrasaOdchod
 
                         if not bylaZvolena:
                             linky[minulaLinka]["spoje"].pop(minulySpoj)
@@ -637,14 +655,14 @@ def nacti():
     ################### IMPORT DO DATABAZE ###################
 
     # kolizia dat
-    print(Fore.CYAN+"Ako sa zachovat pri existujucich datach "+Style.RESET_ALL+"[ponechat|prepisat]"+Fore.CYAN+"?"+Style.RESET_ALL,end="")
+    print(Fore.CYAN+"Ako sa zachovat k existujucim zaznamum "+Style.RESET_ALL+"[ponechat|aktualizovat|vymazat]"+Fore.CYAN+"?"+Style.RESET_ALL,end="")
     volbaKolize = None
     while volbaKolize == None:
         volba = input()
         if volba == "ponechat":
             volbaKolize = "ponechat"
-        elif volba == "prepisat":
-            volbaKolize = "prepisat"
+        elif volba == "vymazat":
+            volbaKolize = "vymazat"
         else:
             print(Fore.RED+"Chybna volba, opakujte zadani!"+Style.RESET_ALL)
     
@@ -671,19 +689,19 @@ def nacti():
                     SQLdbHlasenie.execute("insert into `stanice` (`IDstanice`,`cestaKSuboru`) values ("+str(zastavka)+",'hlas/SK/stanice/"+str(zastavka)+".wav')")
                 except Exception as e:
                     if str(e).find("UNIQUE constraint failed: stanice.IDstanice") != -1:
-                        if volbaKolize == "prepisat":
+                        if volbaKolize == "vymazat":
                             SQLdbHlasenie.execute("update `stanice` set `cestaKSuboru` = 'hlas/SK/stanice/"+str(zastavka)+".wav' where `IDstanice` = "+str(zastavka))
                             try:
-                                importZasChyba.append(Fore.YELLOW+"Zastavka "+str(zastavka)+" uz v databazii existuje, prepisuji!"+Style.RESET_ALL)
+                                importZasChyba.append(Fore.YELLOW+"Hlasenie zastavky "+str(zastavka)+" uz v databazii existuje, prepisuji!"+Style.RESET_ALL)
                             except:
                                 importZasChyba = []
-                                importZasChyba.append(Fore.YELLOW+"Zastavka "+str(zastavka)+" uz v databazii existuje, prepisuji!"+Style.RESET_ALL)
+                                importZasChyba.append(Fore.YELLOW+"Hlasenie zastavky "+str(zastavka)+" uz v databazii existuje, prepisuji!"+Style.RESET_ALL)
                         else:
                             try:
-                                importZasChyba.append(Fore.YELLOW+"Zastavka "+str(zastavka)+" uz v databazii existuje, preskakuji!"+Style.RESET_ALL)
+                                importZasChyba.append(Fore.YELLOW+"Hlasenie zastavky "+str(zastavka)+" uz v databazii existuje, preskakuji!"+Style.RESET_ALL)
                             except:
                                 importZasChyba = []
-                                importZasChyba.append(Fore.YELLOW+"Zastavka "+str(zastavka)+" uz v databazii existuje, preskakuji!"+Style.RESET_ALL)
+                                importZasChyba.append(Fore.YELLOW+"Hlasenie zastavky "+str(zastavka)+" uz v databazii existuje, preskakuji!"+Style.RESET_ALL)
 
             dbHlasenie.commit()
             dbHlasenie.close()
@@ -695,6 +713,46 @@ def nacti():
                 print(" ["+Fore.YELLOW+"POZOR"+Style.RESET_ALL+"]")
                 for chyba in importZasChyba:
                     print(chyba)
+
+    print("Importuji zastavky do databazie...                            ",end="")
+    try:
+        dbHlasenie = sqlite3.connect("zastavky.dat")
+    except sqlite3.OperationalError:
+        print(" ["+Fore.RED+"CHYBA"+Style.RESET_ALL+"]")
+        print(Fore.RED+"Chyba citanie modulu zastavky.dat"+Style.RESET_ALL)
+        input()
+        return()
+    else:
+        SQLdbHlasenie = dbHlasenie.cursor()
+        for zastavka in zastavky:
+            try:
+                SQLdbHlasenie.execute("insert into `zastavkyMena` (`IDzastavky`,`TextZastavky`) values ("+str(zastavka)+",'"+str(zastavky[zastavka])+"')")
+            except Exception as e:
+                if str(e).find("UNIQUE constraint failed: zastavkyMena.IDstanice") != -1:
+                    if volbaKolize == "vymazat":
+                        SQLdbHlasenie.execute("update `zastavkyMena` set `IDzastavky` = "+str(zastavka)+",`TextZastavky` = '"+str(zastavky[zastavka])+"' where `IDstanice` = "+str(zastavka)+")")
+                        try:
+                            importZasChyba.append(Fore.YELLOW+"Zastavka "+str(zastavka)+" uz v databazii existuje, prepisuji!"+Style.RESET_ALL)
+                        except:
+                            importZasChyba = []
+                            importZasChyba.append(Fore.YELLOW+"Zastavka "+str(zastavka)+" uz v databazii existuje, prepisuji!"+Style.RESET_ALL)
+                    else:
+                        try:
+                            importZasChyba.append(Fore.YELLOW+"Zastavka "+str(zastavka)+" uz v databazii existuje, preskakuji!"+Style.RESET_ALL)
+                        except:
+                            importZasChyba = []
+                            importZasChyba.append(Fore.YELLOW+"Zastavka "+str(zastavka)+" uz v databazii existuje, preskakuji!"+Style.RESET_ALL)
+
+        dbHlasenie.commit()
+        dbHlasenie.close()
+        try:
+            importZasChyba
+        except:
+            print(" ["+Fore.GREEN+"OK"+Style.RESET_ALL+"]")
+        else:
+            print(" ["+Fore.YELLOW+"POZOR"+Style.RESET_ALL+"]")
+            for chyba in importZasChyba:
+                print(chyba)
 
     # hlasenie dopravcov
     print(Fore.CYAN+"Naimportovat do databaze aj hlasenie spolocnosti?"+Style.RESET_ALL,end="")
@@ -718,7 +776,7 @@ def nacti():
                     SQLdbHlasenie.execute("insert into `dopravcia` (`dopravca`,`cestaKSuboru`) values ("+str(dopravca)+",'hlas/SK/dopravcia/"+str(dopravca)+".wav')")
                 except Exception as e:
                     if str(e).find("UNIQUE constraint failed: dopravcia.ID") != -1:
-                        if volbaKolize == "prepisat":
+                        if volbaKolize == "vymazat":
                             SQLdbHlasenie.execute("update `dopravcia` set `cestaKSuboru` = 'hlas/SK/stanice/"+str(dopravca)+".wav' where `dopravca` = "+str(dopravca))
                             try:
                                 importDopChyba.append(Fore.YELLOW+"Dopravca "+str(dopravca)+" uz v databazii existuje, prepisuji!"+Style.RESET_ALL)
@@ -763,7 +821,7 @@ def nacti():
                     SQLdbTrasy.execute("insert into `seznamTras` (`IDtrasy`) values ("+str(i+1)+")")
                 except Exception as e:
                     if str(e).find("UNIQUE constraint failed: seznamTras.IDtrasy") != -1:
-                        if volbaKolize == "prepisat":
+                        if volbaKolize == "vymazat":
                             SQLdbTrasy.execute("drop table `"+str(i+1)+"`")
                             SQLdbTrasy.execute("CREATE TABLE `"+str(i+1)+"` ( `ID` INTEGER, `zastavkaID` INTEGER, PRIMARY KEY(`ID`) )")
                             for zastavka in trasa:
@@ -823,6 +881,22 @@ def nacti():
                             chyba = True
                         print(Fore.RED+"Pro spoj "+str(cisloSpoje)+",linky "+str(linka)+" nieje uvedene nastupiste,"+Fore.CYAN+" zadajte ho teraz:"+Style.RESET_ALL)
                         nastupiste = input()
+                        try:
+                            int(nastupiste)
+                        except:
+                            zadaneNast = False
+                        else:
+                            zadaneNast = True
+
+                        while not zadaneNast:
+                            print(Fore.RED+'"'+str(nastupiste)+'" neni platna hodnota nastupiste. Zkuste to znovu!'+Style.RESET_ALL)
+                            nastupiste = input()
+                            try:
+                                int(nastupiste)
+                            except:
+                                zadaneNast = False
+                            else:
+                                zadaneNast = True
 
                     if spoj["trasaPrichod"] == '' or spoj["trasaPrichod"] == 0:
                         zacina = 1
@@ -853,6 +927,15 @@ def nacti():
                     else:
                         casOdchod = 0
 
+                    obecnaPlatnost = ""
+                    if spoj["obecnaPlatnost"] != []:
+                        for i,den in enumerate(spoj["obecnaPlatnost"]):
+                            obecnaPlatnost = obecnaPlatnost+str(den)
+                            if i < len(spoj["obecnaPlatnost"])-1:
+                                obecnaPlatnost = obecnaPlatnost+","
+                    else:
+                        obecnaPlatnost = "1,2,3,4,5,6,7,8"
+
                     # print("insert into `spoje` (`IDplatnosti`,`SK`,`ENG`,`IDtrasyPrichod`,`IDtrasyOdchod`,`casPrichod`,`casOdchod`,`konci`,`zacina`,`dopravca`,`linka`,`nastupiste`,`typ`) values ('"+
                     #     str(stringPoznamky)+
                     #     "',1,0,"+
@@ -867,7 +950,7 @@ def nacti():
                     #     str(spoj["nastupiste"])+",'"+
                     #     str(typ)+"')")
 
-                    SQLdbTrasy.execute("insert into `spoje` (`IDplatnosti`,`SK`,`ENG`,`IDtrasyPrichod`,`IDtrasyOdchod`,`casPrichod`,`casOdchod`,`konci`,`zacina`,`dopravca`,`linka`,`nastupiste`,`typ`) values ('"+
+                    SQLdbTrasy.execute("insert into `spoje` (`IDplatnosti`,`SK`,`ENG`,`IDtrasyPrichod`,`IDtrasyOdchod`,`casPrichod`,`casOdchod`,`konci`,`zacina`,`dopravca`,`linka`,`nastupiste`,`typ`,`obecnaPlatnost`) values ('"+
                         str(stringPoznamky)+
                         "',1,0,"+
                         str(spoj["trasaPrichod"])+","+
@@ -879,7 +962,8 @@ def nacti():
                         str(dopravca)+","+
                         str(linka)+","+
                         str(nastupiste)+",'"+
-                        str(typ)+"')")
+                        str(typ)+"','"+
+                        str(obecnaPlatnost)+"')")
 
             dbTrasy.commit()
             dbTrasy.close()
@@ -893,33 +977,64 @@ def nacti():
         file.write(str(verzeDatCIS))
     
     # datumove poznamky
-    # print(Fore.CYAN+"Naimportovat do databaze aj datumove poznamky?"+Style.RESET_ALL,end="")
-    # if yesno(""):
-    #     print("Importuji datumove poznamky do databazie...                                       ",end="")
-    #     try:
-    #         dbTrasy = sqlite3.connect("datumy.dat")
-    #     except sqlite3.OperationalError:
-    #         print(" ["+Fore.RED+"CHYBA"+Style.RESET_ALL+"]")
-    #         print(Fore.RED+"Chyba citanie modulu datumy.dat"+Style.RESET_ALL)
-    #         input()
-    #         return()
-    #     else:
-    #         SQLdbTrasy = dbTrasy.cursor()
-    #         SQLdbTrasy.execute("delete from `datumy`")
-    #         for datum in linky:
-    #             print(datum)
-    #         SQLdbTrasy.execute("insert into `spoje` (`IDplatnosti`,`SK`,`ENG`,`IDtrasyPrichod`)")
+    print(Fore.CYAN+"Naimportovat do databaze aj datumove poznamky?"+Style.RESET_ALL,end="")
+    if yesno(""):
+        print("Importuji datumove poznamky do databazie...                           ",end="")
+        try:
+            dbDatumy = sqlite3.connect("datumy.dat")
+        except sqlite3.OperationalError:
+            print(" ["+Fore.RED+"CHYBA"+Style.RESET_ALL+"]")
+            print(Fore.RED+"Chyba citanie modulu datumy.dat"+Style.RESET_ALL)
+            input()
+            return()
+        else:
+            SQLdbDatumy = dbDatumy.cursor()
+            SQLdbDatumy.execute("delete from `datumy`")
+            for ID in datumovePoznamky:
+                datumovaPoznamka = datumovePoznamky[ID]
 
-    #         dbTrasy.commit()
-    #         dbTrasy.close()
-    #         try:
-    #             importTrasyChyba
-    #         except:
-    #             print(" ["+Fore.GREEN+"OK"+Style.RESET_ALL+"]")
-    #         else:
-    #             print(" ["+Fore.YELLOW+"POZOR"+Style.RESET_ALL+"]")
-    #             for chyba in importTrasyChyba:
-    #                 print(chyba)           
+                jedeTake = ""
+                try:
+                    for i,datum in enumerate(datumovaPoznamka["jedeTake"]):
+                        jedeTake = jedeTake+datum
+                        if i < len(datumovaPoznamka["jedeTake"])-1:
+                            jedeTake = jedeTake+","
+                except:
+                    pass
+
+                nejede = ""
+                try:
+                    for i,datum in enumerate(datumovaPoznamka["nejede"]):
+                        nejede = nejede+datum
+                        if i < len(datumovaPoznamka["nejede"])-1:
+                            nejede = nejede+","
+                except:
+                    pass
+
+                jedeLiche = datumovaPoznamka["jedeJenVLichychTydnech"]
+                jedeSude = datumovaPoznamka["jedeJenVSudychTydnech"]
+
+                jede = ""
+                try:
+                    for i,datum in enumerate(datumovaPoznamka["jedeVRozsahu"]):
+                        jede = jede+datum
+                        if i < len(datumovaPoznamka["jedeVRozsahu"])-1:
+                            jede = jede+","
+                except:
+                    pass
+
+                SQLdbDatumy.execute("insert into `datumy` (`ID`,`jede`,`jedeTake`,`nejede`,`jedeJenVLichychTydnech`,`jedeJenVSudychTydnech`) values ("+
+                str(ID)+",'"+
+                str(jede)+"','"+
+                str(jedeTake)+"','"+
+                str(nejede)+"',"+
+                str(jedeLiche)+","+
+                str(jedeSude)+")")
+
+            dbDatumy.commit()
+            dbDatumy.close()
+
+            print(" ["+Fore.GREEN+"OK"+Style.RESET_ALL+"]")    
             
 # def ziskejVsetkyZadaneDniVRoce(year,day):
 #    d = date(year, 1, 1)                    # January 1st
@@ -943,7 +1058,6 @@ print(Back.GREEN+Fore.BLACK+"*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*
 print(Back.GREEN+Fore.BLACK+"                             KONEC IMPORTU                                 "+Style.RESET_ALL)
 print(Back.GREEN+Fore.BLACK+"                           Prijemny zbytok dna                             "+Style.RESET_ALL)
 print(Back.GREEN+Fore.BLACK+"                                                                           "+Style.RESET_ALL)
-print(Back.GREEN+Fore.BLACK+"                              ¯\_( ° - °)_/¯                               "+Style.RESET_ALL)
 print(Back.GREEN+Fore.BLACK+"              Aplikaciu ukoncite stisknutim lubovolnej klavesy...          "+Style.RESET_ALL)
 print(Back.GREEN+Fore.BLACK+"*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*#*"+Style.RESET_ALL)
 input()

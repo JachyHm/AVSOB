@@ -5,7 +5,7 @@ import wave
 import sys
 import time
 import vypis
-from threading import Thread
+import threading
 from operator import itemgetter
 import signal
 
@@ -25,11 +25,11 @@ class soundAPI():
         self.startHlasenie = objektData.poleHlasenie["SK"]["znelky"]["start"]
         self.konecHlasenia = objektData.poleHlasenie["SK"]["znelky"]["koniec"]
         self.medziHlasenimi = objektData.poleHlasenie["SK"]["znelky"]["medzi"]
-        self.vlaknoHlaseni = Thread(target=self.cyklusHlaseni)
+        self.vlaknoHlaseni = threading.Thread(target=self.cyklusHlaseni)
         self.vlaknoHlaseni.start()
     
     def cyklusHlaseni(self):
-        while (len(self.tabulkaHlasenia) > 0):
+        while (len(self.tabulkaHlasenia) > 0 and not self.stop):
             if self.byloPrve:
                 self.byloPrve = False
                 # self.vypis.vypis("Toto je prvé hlásenie vo fronte, prehravam znelku štart!",2)
@@ -43,6 +43,8 @@ class soundAPI():
                 # self.vypis.vypis("Nieje dalšie hlásenie vo fronte, prehrávám znelku koniec!",2)
                 self.vyhlas([self.konecHlasenia])
             # self.vypis.vypis("Konec hlásenia!",1)
+        if self.stop:
+            raise SystemExit
 
     def pridejHlaseni(self, poleHlaseni):
         # prida hlasenie do fronty
@@ -52,14 +54,18 @@ class soundAPI():
         # self.vypis.vypis("Prijaté hlásenie s prioritou "+str(poleHlaseni[1])+" je "+str(self.tabulkaHlasenia.index(poleHlaseni)+1)+". vo fronte!",2)
         if not self.vlaknoHlaseni.is_alive():
             self.byloPrve = True
-            self.vlaknoHlaseni = Thread(target=self.cyklusHlaseni)
+            self.vlaknoHlaseni = threading.Thread(target=self.cyklusHlaseni)
             self.vlaknoHlaseni.start()
     
     def vratFrontuHlaseni(self):
         return len(self.tabulkaHlasenia)
 
-    def zastav(self):
+    def zastavHlasenie(self):
         self.stop = True
+        return(threading.enumerate())
+
+    def obnovHlasenie(self):
+        self.stop = False
         
     def vyhlas(self,poleHlaseni):
         # vytvor objekt PyAudio
@@ -67,7 +73,7 @@ class soundAPI():
 
         for soubor in poleHlaseni:
             soubor = self.objektData.poleHlasenie["SK"]["cestaKSuborum"]+soubor
-            self.vypis.vypis('Hlásím "'+soubor+'"',1)
+            self.vypis.vypis('Hlasim "'+soubor+'"',1)
             try:
                 wf = wave.open(soubor, 'rb')
             except:
@@ -86,12 +92,18 @@ class soundAPI():
 
                 # prehravaj chunk dokial nieje nulovej dlzky
                 while len(data) > 0:
-                    stream.write(data)
-                    data = wf.readframes(CHUNK)
+                    if self.stop:
+                        break
+                    else:
+                        stream.write(data)
+                        data = wf.readframes(CHUNK)
 
                 # ukonci stream
                 stream.stop_stream()
                 stream.close()
+
+                if self.stop:
+                    break
 
         # zatvor objekt PyAudia
         p.terminate()

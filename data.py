@@ -1,4 +1,6 @@
 ﻿import sqlite3
+from collections import OrderedDict
+
 cestaKSuborum = "D:/OIS/erik_system/AVSOB/"
 class Data():
     def __init__(self):
@@ -8,6 +10,34 @@ class Data():
         self.NactiDatumy()
         self.NactiSpoje()
         self.NactiHlasenie("SK")
+        self.NactiSvatky()
+
+    def KedySuVelikonoce(self):
+        import datetime
+        datumObj = datetime.date.today()
+        a = datumObj.year%19
+        b = datumObj.year%4
+        c = datumObj.year%7
+        m = 24
+        n = 5
+        d = (19*a+m)%30
+        e = (n+2*b+4*c+6*d)%7
+        u = d + e - 9
+        if u == 25 and d == 28 and e == 6 and a > 10:
+            u = 18
+            v = 4 
+        elif u >= 1 and u <=25:
+            v = 4
+        elif u > 25:
+            u = u -7
+            v = 4
+        else:
+            u = 22 + d + e 
+            v = 3
+        pondeli = datetime.date(datumObj.year,v,u) + datetime.timedelta(days=1)
+        patek = (pondeli - datetime.timedelta(days=3)).strftime("%d%m%Y")
+        pondeli = pondeli.strftime("%d%m%Y")
+        return [patek,pondeli]
 
     def NactiZastavkyNazvy(self):
         try:
@@ -20,7 +50,7 @@ class Data():
             SQLdbZastavky.execute('select * from `zastavkyMena` where `IDzastavky`')
             self.zastavky = {}
             for tupleZastavka in SQLdbZastavky.fetchall():
-                self.zastavky[tupleZastavka[1]] = tupleZastavka[0]
+                self.zastavky[tupleZastavka[0]] = tupleZastavka[1]
     
     def NactiDatumy(self):
         try:
@@ -34,10 +64,11 @@ class Data():
             self.datumy = {}
             for datumovaPoznamka in SQLdbDatumy.fetchall():
                 datum = {}
+
                 try:
-                    datum["obecnaPlatnost"] = datumovaPoznamka[0].split(",")
+                    datum["jede"] = datumovaPoznamka[1].split(",")
                 except:
-                    datum["obecnaPlatnost"] = []
+                    datum["jede"] = []
             
                 try:
                     datum["jedeTake"] = datumovaPoznamka[2].split(",")
@@ -48,6 +79,16 @@ class Data():
                     datum["nejede"] = datumovaPoznamka[3].split(",")
                 except:
                     datum["nejede"] = []
+
+                try:
+                    datum["jedeLiche"] = datumovaPoznamka[4]
+                except:
+                    datum["jedeLiche"] = 0
+
+                try:
+                    datum["jedeSude"] = datumovaPoznamka[5]
+                except:
+                    datum["jedeSude"] = 0
 
                 self.datumy[datumovaPoznamka[0]] = datum
 
@@ -78,6 +119,7 @@ class Data():
                 spoj["linka"] = tupleSpoj[11]
                 spoj["nastupiste"] = tupleSpoj[12]
                 spoj["typ"] = tupleSpoj[13]
+                spoj["obecnaPlatnost"] = tupleSpoj[14]
                 self.spoje[tupleSpoj[0]] = spoj
                 if tupleSpoj[9] == 0:
                     try:
@@ -101,9 +143,24 @@ class Data():
             self.spojeDlaCasuPrichPrisiel = self.spojeDlaCasuPrich
             self.spojeDlaCasuOdchBudePristaveny = self.spojeDlaCasuOdch
             self.spojeDlaCasuOdchBudePristavenyDruhe = self.spojeDlaCasuOdch
-            print(self.spojeDlaCasuPrich)
+            self.spojeSerazene = OrderedDict(sorted(self.spoje.items(),key=lambda x:int(str(x[1]['casOdchodu'] if x[1]['casOdchodu'] != 0 else x[1]['casPrichodu']).replace(":", ""))))
             
-
+    def NactiSvatky(self):
+        import datetime
+        try:
+            dbSvatky = sqlite3.connect(cestaKSuborum+"data/svatky.dat")
+        except sqlite3.OperationalError:
+            pass
+            # input("Chyba čítanie modulu trasy.dat!")
+        else:            
+            SQLdbSvatky = dbSvatky.cursor()
+            SQLdbSvatky.execute('select * from `svatky` where `datum`')
+        self.svatky = []
+        for datum in SQLdbSvatky.fetchall():
+            self.svatky.append(datum[0]+str(datetime.date.today().year))
+        
+        self.svatky.extend(self.KedySuVelikonoce())
+        
     def NactiTrasy(self):
         try:
             dbTrasy = sqlite3.connect(cestaKSuborum+"data/trasy.dat")
@@ -115,16 +172,16 @@ class Data():
             SQLdbTrasy.execute('select * from `seznamTras` where `IDtrasy`')
             self.trasyID = []
             for IDtrasa in SQLdbTrasy.fetchall():
-                self.trasyID.append(IDtrasa)
+                self.trasyID.append(IDtrasa[0])
                     
             self.trasy = {}
             
             for IDtrasa in self.trasyID:
                 trasyTemp = []
-                SQLdbTrasy.execute('select * from `'+str(IDtrasa[0])+'` where `zastavkaID`')
+                SQLdbTrasy.execute('select * from `'+str(IDtrasa)+'` where `zastavkaID`')
                 for zastavkaTrasy in SQLdbTrasy.fetchall():
                     trasyTemp.append(zastavkaTrasy[1])
-                self.trasy[IDtrasa[0]] = trasyTemp
+                self.trasy[IDtrasa] = trasyTemp
 
     def NactiHlasenie(self, jazyk):
         try:
