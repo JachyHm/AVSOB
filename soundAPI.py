@@ -13,11 +13,12 @@ import signal
 CHUNK = 1024
 
 class soundAPI():
-    def __init__(self, objektData):
+    def __init__(self, objektData, prvy=True):
         # inicializacia API pre hlasenie
         self.vypis = vypis.Vypis()
         self.vypis.nastavVypis(2)
-        self.tabulkaHlasenia = []
+        if prvy:
+            self.tabulkaHlasenia = []
         self.byloPrve = False
         self.stop = False
         #docasne cesty k znelkam
@@ -62,10 +63,11 @@ class soundAPI():
 
     def zastavHlasenie(self):
         self.stop = True
-        return(threading.enumerate())
+        return("Vlakno hlasenie ukoncene!")
 
     def obnovHlasenie(self):
         self.stop = False
+        self.__init__(self.objektData,False)
         
     def vyhlas(self,poleHlaseni):
         # vytvor objekt PyAudio

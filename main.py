@@ -26,6 +26,8 @@ vyhlasXminPredDruhy = 7
 prichadzaVyhlasXminPred = 3
 hnedOdideLimit = 0
 data = data.Data()
+vypis = vypis.Vypis()
+vypis.nastavVypis(2)
 
 def DatumovaPlatnost(IDpodminky,obecnaPlatnost,denVTydnu):
     datumObj = datetime.now()
@@ -133,7 +135,7 @@ def DatumovaPlatnost(IDpodminky,obecnaPlatnost,denVTydnu):
 
     return jede
 
-class Window():
+class MainWindow():
     def __init__(self):
         msg_TaskbarRestart = win32gui.RegisterWindowMessage("TaskbarCreated")
         message_map = {
@@ -168,13 +170,13 @@ class Window():
     def _DoCreateIcons(self):
         # Try and find a custom icon
         hinst =  win32api.GetModuleHandle(None)
-        iconPathName = os.path.abspath(os.path.join( os.path.split(sys.executable)[0], "icon.ico" ))
+        iconPathName = os.path.abspath(os.path.join( os.path.split(os.path.abspath(__file__))[0], "icon.ico" ))
         if not os.path.isfile(iconPathName):
             # Look in DLLs dir, a-la py 2.5
-            iconPathName = os.path.abspath(os.path.join( os.path.split(sys.executable)[0], "DLLs", "icon.ico" ))
+            iconPathName = os.path.abspath(os.path.join( os.path.split(os.path.abspath(__file__))[0], "DLLs", "icon.ico" ))
         if not os.path.isfile(iconPathName):
             # Look in the source tree.
-            iconPathName = os.path.abspath(os.path.join( os.path.split(sys.executable)[0], "..\\PC\\icon.ico" ))
+            iconPathName = os.path.abspath(os.path.join( os.path.split(os.path.abspath(__file__))[0], "..\\PC\\icon.ico" ))
         if os.path.isfile(iconPathName):
             icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
             hicon = win32gui.LoadImage(hinst, iconPathName, win32con.IMAGE_ICON, 0, 0, icon_flags)
@@ -203,16 +205,15 @@ class Window():
 
     def OnTaskbarNotify(self, hwnd, msg, wparam, lparam):
         if lparam==win32con.WM_LBUTTONUP:
-            print("You clicked me.")
+            pass #left click
         elif lparam==win32con.WM_LBUTTONDBLCLK:
-            print("You double-clicked me - goodbye")
-            win32gui.DestroyWindow(self.hwnd)
+            pass #double left click
         elif lparam==win32con.WM_RBUTTONUP:
-            print("You right clicked me.")
+            #right click
             menu = win32gui.CreatePopupMenu()
-            win32gui.AppendMenu( menu, win32con.MF_STRING, 1023, "Display Dialog")
-            win32gui.AppendMenu( menu, win32con.MF_STRING, 1024, "Say Hello")
-            win32gui.AppendMenu( menu, win32con.MF_STRING, 1025, "Exit program" )
+            win32gui.AppendMenu( menu, win32con.MF_STRING, 1023, "Obnov hlasenie")
+            win32gui.AppendMenu( menu, win32con.MF_STRING, 1024, "Zastav hlasenie")
+            win32gui.AppendMenu( menu, win32con.MF_STRING, 1025, "Ukonci aplikaciu" )
             pos = win32gui.GetCursorPos()
             # See http://msdn.microsoft.com/library/default.asp?url=/library/en-us/winui/menus_0hdi.asp
             win32gui.SetForegroundWindow(self.hwnd)
@@ -225,27 +226,29 @@ class Window():
         if id == 1023:
             # import win32gui_dialog
             # win32gui_dialog.DemoModal()
-            pass
+            M.soundAPI.obnovHlasenie()
         elif id == 1024:
-            print("Hello")
+            M.soundAPI.zastavHlasenie()
         elif id == 1025:
-            print("Goodbye")
+            vypis.vypis("Ukoncuji vlakno hlasenie!")
+            vypis.vypis(M.soundAPI.zastavHlasenie())
+            vypis.vypis(M.server.forceStop())
+            M.stop = True
             win32gui.DestroyWindow(self.hwnd)
         else:
             print("Unknown command -", id)
 
 class Main():
     def __init__(self):
-        self.vypis = vypis.Vypis()
-        self.vypis.nastavVypis(2)
         self.soundAPI = soundAPI.soundAPI(data)
         self.vyhlas = Vyhlas()
-        self.vypis.vypis('Inicializacia aplikacie!',1)
+        vypis.vypis('Inicializacia aplikacie!',1)
         self.server = HTTP_handler()
         # self.soundAPI.vyhlas(["hlas/SK/start.wav",data.poleHlasenie["SK"]["stanice_umisteni"]])
         hostname = socket.gethostname()
         self.ip = socket.gethostbyname(hostname)
-        self.vypis.vypis('Server bezi na adrese '+self.ip+':8081!',1)
+        vypis.vypis('Server bezi na adrese '+self.ip+':8081!',1)
+        self.stop = False
 
     def beh(self, 
             # objektSluzby
@@ -257,270 +260,259 @@ class Main():
         # self.vyhlas.OdidePriNast(self,"Mbus",2,19,"19:43",13,False)
         self.vyhlas.OdidePriNast(self,"Pbus","Eurobus",9,"14:06",13,False,True)
         self.vyhlas.PrideTranzitny(self,"Mbus","Eurobus",1,19,"19:41","19:43",13,False)
-        self.vyhlas.PrideTranzitny(self,"Mbus","Eurobus",1,9,"19:41","19:43",13,False,True)
-        self.vyhlas.PrichadzaTranzitny(self,"Rbus","Eurobus",1,9,"14:06","14:08",13,False)
+        # self.vyhlas.PrideTranzitny(self,"Mbus","Eurobus",1,9,"19:41","19:43",13,False,True)
+        # self.vyhlas.PrichadzaTranzitny(self,"Rbus","Eurobus",1,9,"14:06","14:08",13,False)
         # self.vyhlas.PrichadzaTranzitny(self,"Mbus",2,1,19,"19:41","19:43",13,False,True)
         # self.vyhlas.PrisielTranzitny(self,"Mbus",2,1,19,"19:41","19:43",13,False,False,False)
         # self.vyhlas.PrisielTranzitny(self,"Mbus",2,1,19,"19:41","19:43",13,False,True,False)
         # self.vyhlas.PrisielTranzitny(self,"Mbus",2,1,19,"19:41","19:43",13,False,False,True)
         # self.vyhlas.PrisielTranzitny(self,"Mbus",2,1,19,"19:41","19:43",13,False,True,True)
-        self.vyhlas.PrideKonciaci(self,"Rbus","Eurobus",1,"14:06",13,False)
+        # self.vyhlas.PrideKonciaci(self,"Rbus","Eurobus",1,"14:06",13,False)
         # self.vyhlas.PrideKonciaci(self,"Mbus",2,1,"19:43",13,False,True)
         # self.vyhlas.PrichadzaKonciaci(self,"Mbus",2,1,13,False)
         # self.vyhlas.PrichadzaKonciaci(self,"Mbus",2,1,13,False,True)
-        self.vyhlas.PrisielKonciaci(self,"Mbus","Eurobus",1,"14:06",13,False)
+        # self.vyhlas.PrisielKonciaci(self,"Mbus","Eurobus",1,"14:06",13,False)
         # self.vyhlas.PrisielKonciaci(self,"Mbus",2,1,"19:41",13,False,True)
-        while True:
-            try:
-                #----------CASY---------
-                    #aktualny cas
-                    localtime = time.localtime(time.time())
-                    denVTydnu = str(localtime.tm_wday)
+        while not self.stop:
+            #----------CASY---------
+                #aktualny cas
+                localtime = time.localtime(time.time())
+                denVTydnu = str(localtime.tm_wday)
 
-                    casMM = str(localtime.tm_min)
-                    while len(casMM) < 2:
-                        casMM = "0"+casMM
+                casMM = str(localtime.tm_min)
+                while len(casMM) < 2:
+                    casMM = "0"+casMM
 
-                    casHH = str(localtime.tm_hour)
-                    while len(casHH) < 2:
-                        casHH = "0"+casHH
-                        
-                    cas = casHH+":"+casMM
-
-                    if cas == "21:20":
-                        self.soundAPI.zastavHlasenie()
-
-                    #aktualny cas - predstih hlasenie "pride"
-                    localtimePride = time.localtime(time.time()+vyhlasXminPred*60)
-
-                    casPrideMM = str(localtimePride.tm_min)
-                    while len(casPrideMM) < 2:
-                        casPrideMM = "0"+casPrideMM
-
-                    casPrideHH = str(localtimePride.tm_hour)
-                    while len(casPrideHH) < 2:
-                        casPrideHH = "0"+casPrideHH
-
-                    casPride = casPrideHH+":"+casPrideMM
-
-                    #aktualny cas - predstih hlasenie "zkraceny pride"
-                    localtimePrideDruhy = time.localtime(time.time()+vyhlasXminPredDruhy*60)
-
-                    casPrideDruhyMM = str(localtimePrideDruhy.tm_min)
-                    while len(casPrideDruhyMM) < 2:
-                        casPrideDruhyMM = "0"+casPrideDruhyMM
-
-                    casPrideDruhyHH = str(localtimePrideDruhy.tm_hour)
-                    while len(casPrideDruhyHH) < 2:
-                        casPrideDruhyHH = "0"+casPrideDruhyHH
-                        
-                    casPrideDruhy = casPrideDruhyHH+":"+casPrideDruhyMM
-
-                    #aktualny cas - predstih hlasenie "prichadza"
-                    localtimePrichadza = time.localtime(time.time()+prichadzaVyhlasXminPred*60)
-
-                    casPrichadzaMM = str(localtimePrichadza.tm_min)
-                    while len(casPrichadzaMM) < 2:
-                        casPrichadzaMM = "0"+casPrichadzaMM
-
-                    casPrichadzaHH = str(localtimePrichadza.tm_hour)
-                    while len(casPrichadzaHH) < 2:
-                        casPrichadzaHH = "0"+casPrichadzaHH
-                        
-                    casPrichadza = casPrichadzaHH+":"+casPrichadzaMM
-
-                
-                #----------VYHLASOVANIE PRICHODOV---------
-
-                    #pole prichodzich spoju k vyhlaseni
-                    vyhlasPrich = data.spojeDlaCasuPrichPride.pop(casPride,[])
-
-                    #pocetSpojuKVyhlaseni
-                    pocetSpojuPrich = len(vyhlasPrich)
-
-                    #vyhlasovani prichozich spoju
-                    for spoj in vyhlasPrich:
-                        spoj = data.spoje[spoj]
-
-                        #zisti, ci dnes spoj ide
-                        jedeDnes = DatumovaPlatnost(spoj["IDplatnosti"],spoj["obecnaPlatnost"],denVTydnu)
-
-                        #pokial ano,
-                        if jedeDnes:
-                            #pokial konci hlas konciaci
-                            if spoj["konci"]:
-                                #pokial je vela hlasenia vo fronte, alebo je naraz viac ako 5 hlaseni, hlas iba zkratene
-                                if self.soundAPI.vratFrontuHlaseni() > 5 or pocetSpojuPrich > 5:
-                                    zkracene = True
-                                else:
-                                    zkracene = False
-
-                                self.vyhlas.PrideKonciaci(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["casPrichodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
-                            #pokial nekonci, hlas tranzitny
-                            else:
-                                #pokial je vela hlasenia vo fronte, alebo je naraz viac ako 5 hlaseni, hlas iba zkratene
-                                if self.soundAPI.vratFrontuHlaseni() > 5 or pocetSpojuPrich > 5:
-                                    zkracene = True
-                                else:
-                                    zkracene = False
-
-                                self.vyhlas.PrideTranzitny(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["IDtrasyOdchod"],spoj["casPrichodu"],spoj["casOdchodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
-
-
-                    #pole prichodzich spoju k vyhlaseni podruhe
-                    vyhlasPrichDruhy = data.spojeDlaCasuPrichPrideDruhy.pop(casPrideDruhy,[])
-
-                    #vyhlasovani prichozich spoju podruhe
-                    for spoj in vyhlasPrichDruhy:
-                        spoj = data.spoje[spoj]
-                        zkracene = True
-
-                        #zisti, ci dnes spoj ide
-                        jedeDnes = DatumovaPlatnost(spoj["IDplatnosti"],spoj["obecnaPlatnost"],denVTydnu)
-
-                        #pokial ano,
-                        if jedeDnes:
-
-                            #pokial konci hlas konciaci
-                            if spoj["konci"]:
-                                self.vyhlas.PrideKonciaci(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["casPrichodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
-                            #pokial nekonci
-                            else:
-                                self.vyhlas.PrideTranzitny(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["IDtrasyOdchod"],spoj["casPrichodu"],spoj["casOdchodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
-
-
-                    #pole prichadza spoju k vyhlaseni
-                    vyhlasPrichadza = data.spojeDlaCasuPrichPrichadza.pop(casPrichadza,[])
-
-                    #pocetSpojuKVyhlaseni
-                    pocetSpojuPrichadza = len(vyhlasPrichadza)
-
-                    #vyhlasovani prichadza spoju
-                    for spoj in vyhlasPrichadza:
-                        spoj = data.spoje[spoj]
-
-                        #zisti, ci dnes spoj ide
-                        jedeDnes = DatumovaPlatnost(spoj["IDplatnosti"],spoj["obecnaPlatnost"],denVTydnu)
-
-                        #pokial ano,
-                        if jedeDnes:
-                            #pokial konci hlas konciaci
-                            if spoj["konci"]:
-                                #pokial je vela hlasenia vo fronte, alebo je naraz viac ako 5 hlaseni, hlas iba zkratene
-                                if self.soundAPI.vratFrontuHlaseni() > 5 or pocetSpojuPrichadza > 5:
-                                    zkracene = True
-                                else:
-                                    zkracene = False
-
-                                self.vyhlas.PrichadzaKonciaci(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
-                            #pokial nekonci, hlas tranzitny
-                            else:
-                                #pokial je vela hlasenia vo fronte, alebo je naraz viac ako 5 hlaseni, hlas iba zkratene
-                                if self.soundAPI.vratFrontuHlaseni() > 5 or pocetSpojuPrichadza > 5:
-                                    zkracene = True
-                                else:
-                                    zkracene = False
-
-                                self.vyhlas.PrichadzaTranzitny(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["IDtrasyOdchod"],spoj["casPrichodu"],spoj["casOdchodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
-
+                casHH = str(localtime.tm_hour)
+                while len(casHH) < 2:
+                    casHH = "0"+casHH
                     
-                    #pole prisel spoju k vyhlaseni
-                    vyhlasPrisel = data.spojeDlaCasuPrichPrisiel.pop(cas,[])
+                cas = casHH+":"+casMM
 
-                    #pocetSpojuKVyhlaseni
-                    pocetSpojuPrisel = len(vyhlasPrisel)
+                #aktualny cas - predstih hlasenie "pride"
+                localtimePride = time.localtime(time.time()+vyhlasXminPred*60)
 
-                    #vyhlasovani prisiel spoju
-                    for spoj in vyhlasPrisel:
-                        spoj = data.spoje[spoj]
+                casPrideMM = str(localtimePride.tm_min)
+                while len(casPrideMM) < 2:
+                    casPrideMM = "0"+casPrideMM
 
-                        #zisti, ci dnes spoj ide
-                        jedeDnes = DatumovaPlatnost(spoj["IDplatnosti"],spoj["obecnaPlatnost"],denVTydnu)
+                casPrideHH = str(localtimePride.tm_hour)
+                while len(casPrideHH) < 2:
+                    casPrideHH = "0"+casPrideHH
 
-                        #pokial ano,
-                        if jedeDnes:
-                            #pokial konci hlas konciaci
-                            if spoj["konci"]:
-                                #pokial je vela hlasenia vo fronte, alebo je naraz viac ako 5 hlaseni, hlas iba zkratene
-                                if self.soundAPI.vratFrontuHlaseni() > 5 or pocetSpojuPrisel > 5:
-                                    zkracene = True
-                                else:
-                                    zkracene = False
+                casPride = casPrideHH+":"+casPrideMM
 
-                                self.vyhlas.PrisielKonciaci(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["casPrichodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
-                            #pokial nekonci, hlas tranzitny
-                            else:
-                                #pokial je vela hlasenia vo fronte, alebo je naraz viac ako 5 hlaseni, hlas iba zkratene
-                                if self.soundAPI.vratFrontuHlaseni() > 5 or pocetSpojuPrisel > 5:
-                                    zkracene = True
-                                else:
-                                    zkracene = False
+                #aktualny cas - predstih hlasenie "zkraceny pride"
+                localtimePrideDruhy = time.localtime(time.time()+vyhlasXminPredDruhy*60)
 
-                                #pokial je rozdil mensej ako nastaveny v hlavicke, vyhlas "hned odide"
-                                s1 = spoj["casPrichodu"]
-                                s2 = spoj["casOdchodu"]
-                                TEMPLATE = '%H:%M'
+                casPrideDruhyMM = str(localtimePrideDruhy.tm_min)
+                while len(casPrideDruhyMM) < 2:
+                    casPrideDruhyMM = "0"+casPrideDruhyMM
 
-                                rozdil = datetime.strptime(s2, TEMPLATE) - datetime.strptime(s1, TEMPLATE)
+                casPrideDruhyHH = str(localtimePrideDruhy.tm_hour)
+                while len(casPrideDruhyHH) < 2:
+                    casPrideDruhyHH = "0"+casPrideDruhyHH
+                    
+                casPrideDruhy = casPrideDruhyHH+":"+casPrideDruhyMM
 
-                                if rozdil <= hnedOdideLimit:
-                                    hnedOdide = True
-                                else:
-                                    hnedOdide = False
+                #aktualny cas - predstih hlasenie "prichadza"
+                localtimePrichadza = time.localtime(time.time()+prichadzaVyhlasXminPred*60)
 
+                casPrichadzaMM = str(localtimePrichadza.tm_min)
+                while len(casPrichadzaMM) < 2:
+                    casPrichadzaMM = "0"+casPrichadzaMM
 
-                                self.vyhlas.PrisielTranzitny(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["IDtrasyOdchod"],spoj["casPrichodu"],spoj["casOdchodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene,hnedOdide)
+                casPrichadzaHH = str(localtimePrichadza.tm_hour)
+                while len(casPrichadzaHH) < 2:
+                    casPrichadzaHH = "0"+casPrichadzaHH
+                    
+                casPrichadza = casPrichadzaHH+":"+casPrichadzaMM
 
+            
+            #----------VYHLASOVANIE PRICHODOV---------
 
-                #----------VYHLASOVANIE PRISTAVENIE---------
+                #pole prichodzich spoju k vyhlaseni
+                vyhlasPrich = data.spojeDlaCasuPrichPride.pop(casPride,[])
 
-                    #pole pristavovanych spoju k vyhlaseni
-                    vyhlasBudePristaveny = data.spojeDlaCasuOdchBudePristaveny.pop(casPride,[])
+                #pocetSpojuKVyhlaseni
+                pocetSpojuPrich = len(vyhlasPrich)
 
-                    #pocetSpojuKVyhlaseni
-                    pocetSpojuBudePristaveny = len(vyhlasBudePristaveny)
+                #vyhlasovani prichozich spoju
+                for spoj in vyhlasPrich:
+                    spoj = data.spoje[spoj]
 
-                    #vyhlasovani pristavovanych spoju
-                    for spoj in vyhlasBudePristaveny:
-                        spoj = data.spoje[spoj]
+                    #zisti, ci dnes spoj ide
+                    jedeDnes = DatumovaPlatnost(spoj["IDplatnosti"],spoj["obecnaPlatnost"],denVTydnu)
 
-                        #zisti, ci dnes spoj ide
-                        jedeDnes = DatumovaPlatnost(spoj["IDplatnosti"],spoj["obecnaPlatnost"],denVTydnu)
-
-                        #pokial ano,
-                        if jedeDnes:
-                            #a je vela hlasenia vo fronte, alebo je naraz viac ako 5 hlaseni, hlas iba zkratene
-                            if self.soundAPI.vratFrontuHlaseni() > 5 or pocetSpojuBudePristaveny > 5:
+                    #pokial ano,
+                    if jedeDnes:
+                        #pokial konci hlas konciaci
+                        if spoj["konci"]:
+                            #pokial je vela hlasenia vo fronte, alebo je naraz viac ako 5 hlaseni, hlas iba zkratene
+                            if self.soundAPI.vratFrontuHlaseni() > 5 or pocetSpojuPrich > 5:
                                 zkracene = True
-                            #inak hlas plnu verziu
                             else:
                                 zkracene = False
 
-                            self.vyhlas.BudePristaveny(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyOdchod"],spoj["casOdchodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
+                            self.vyhlas.PrideKonciaci(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["casPrichodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
+                        #pokial nekonci, hlas tranzitny
+                        else:
+                            #pokial je vela hlasenia vo fronte, alebo je naraz viac ako 5 hlaseni, hlas iba zkratene
+                            if self.soundAPI.vratFrontuHlaseni() > 5 or pocetSpojuPrich > 5:
+                                zkracene = True
+                            else:
+                                zkracene = False
+
+                            self.vyhlas.PrideTranzitny(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["IDtrasyOdchod"],spoj["casPrichodu"],spoj["casOdchodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
 
 
-                    #pole pristavovanych spoju k vyhlaseni podruhe
-                    vyhlasBudePristavenyDruhy = data.spojeDlaCasuOdchBudePristavenyDruhe.pop(casPrideDruhy,[])
+                #pole prichodzich spoju k vyhlaseni podruhe
+                vyhlasPrichDruhy = data.spojeDlaCasuPrichPrideDruhy.pop(casPrideDruhy,[])
 
-                    #vyhlasovani pristavovanych spoju podruhe
-                    for spoj in vyhlasBudePristavenyDruhy:
-                        spoj = data.spoje[spoj]
-                        zkracene = True
+                #vyhlasovani prichozich spoju podruhe
+                for spoj in vyhlasPrichDruhy:
+                    spoj = data.spoje[spoj]
+                    zkracene = True
 
-                        #zisti, ci dnes spoj ide
-                        jedeDnes = DatumovaPlatnost(spoj["IDplatnosti"],spoj["obecnaPlatnost"],denVTydnu)
+                    #zisti, ci dnes spoj ide
+                    jedeDnes = DatumovaPlatnost(spoj["IDplatnosti"],spoj["obecnaPlatnost"],denVTydnu)
 
-                        #pokial ano, vyhlas
-                        if jedeDnes:
-                            self.vyhlas.BudePristaveny(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyOdchod"],spoj["casOdchodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
+                    #pokial ano,
+                    if jedeDnes:
+
+                        #pokial konci hlas konciaci
+                        if spoj["konci"]:
+                            self.vyhlas.PrideKonciaci(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["casPrichodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
+                        #pokial nekonci
+                        else:
+                            self.vyhlas.PrideTranzitny(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["IDtrasyOdchod"],spoj["casPrichodu"],spoj["casOdchodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
 
 
-                # if objektSluzby.stop:
-                #     break
-            except (KeyboardInterrupt, SystemExit):
-                self.vypis.vypis(self.soundAPI.zastavHlasenie())
-                self.vypis.vypis(self.server.forceStop())
-                raise SystemExit
+                #pole prichadza spoju k vyhlaseni
+                vyhlasPrichadza = data.spojeDlaCasuPrichPrichadza.pop(casPrichadza,[])
+
+                #pocetSpojuKVyhlaseni
+                pocetSpojuPrichadza = len(vyhlasPrichadza)
+
+                #vyhlasovani prichadza spoju
+                for spoj in vyhlasPrichadza:
+                    spoj = data.spoje[spoj]
+
+                    #zisti, ci dnes spoj ide
+                    jedeDnes = DatumovaPlatnost(spoj["IDplatnosti"],spoj["obecnaPlatnost"],denVTydnu)
+
+                    #pokial ano,
+                    if jedeDnes:
+                        #pokial konci hlas konciaci
+                        if spoj["konci"]:
+                            #pokial je vela hlasenia vo fronte, alebo je naraz viac ako 5 hlaseni, hlas iba zkratene
+                            if self.soundAPI.vratFrontuHlaseni() > 5 or pocetSpojuPrichadza > 5:
+                                zkracene = True
+                            else:
+                                zkracene = False
+
+                            self.vyhlas.PrichadzaKonciaci(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
+                        #pokial nekonci, hlas tranzitny
+                        else:
+                            #pokial je vela hlasenia vo fronte, alebo je naraz viac ako 5 hlaseni, hlas iba zkratene
+                            if self.soundAPI.vratFrontuHlaseni() > 5 or pocetSpojuPrichadza > 5:
+                                zkracene = True
+                            else:
+                                zkracene = False
+
+                            self.vyhlas.PrichadzaTranzitny(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["IDtrasyOdchod"],spoj["casPrichodu"],spoj["casOdchodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
+
+                
+                #pole prisel spoju k vyhlaseni
+                vyhlasPrisel = data.spojeDlaCasuPrichPrisiel.pop(cas,[])
+
+                #pocetSpojuKVyhlaseni
+                pocetSpojuPrisel = len(vyhlasPrisel)
+
+                #vyhlasovani prisiel spoju
+                for spoj in vyhlasPrisel:
+                    spoj = data.spoje[spoj]
+
+                    #zisti, ci dnes spoj ide
+                    jedeDnes = DatumovaPlatnost(spoj["IDplatnosti"],spoj["obecnaPlatnost"],denVTydnu)
+
+                    #pokial ano,
+                    if jedeDnes:
+                        #pokial konci hlas konciaci
+                        if spoj["konci"]:
+                            #pokial je vela hlasenia vo fronte, alebo je naraz viac ako 5 hlaseni, hlas iba zkratene
+                            if self.soundAPI.vratFrontuHlaseni() > 5 or pocetSpojuPrisel > 5:
+                                zkracene = True
+                            else:
+                                zkracene = False
+
+                            self.vyhlas.PrisielKonciaci(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["casPrichodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
+                        #pokial nekonci, hlas tranzitny
+                        else:
+                            #pokial je vela hlasenia vo fronte, alebo je naraz viac ako 5 hlaseni, hlas iba zkratene
+                            if self.soundAPI.vratFrontuHlaseni() > 5 or pocetSpojuPrisel > 5:
+                                zkracene = True
+                            else:
+                                zkracene = False
+
+                            #pokial je rozdil mensej ako nastaveny v hlavicke, vyhlas "hned odide"
+                            s1 = spoj["casPrichodu"]
+                            s2 = spoj["casOdchodu"]
+                            TEMPLATE = '%H:%M'
+
+                            rozdil = datetime.strptime(s2, TEMPLATE) - datetime.strptime(s1, TEMPLATE)
+
+                            if rozdil <= hnedOdideLimit:
+                                hnedOdide = True
+                            else:
+                                hnedOdide = False
+
+
+                            self.vyhlas.PrisielTranzitny(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyPrichod"],spoj["IDtrasyOdchod"],spoj["casPrichodu"],spoj["casOdchodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene,hnedOdide)
+
+
+            #----------VYHLASOVANIE PRISTAVENIE---------
+
+                #pole pristavovanych spoju k vyhlaseni
+                vyhlasBudePristaveny = data.spojeDlaCasuOdchBudePristaveny.pop(casPride,[])
+
+                #pocetSpojuKVyhlaseni
+                pocetSpojuBudePristaveny = len(vyhlasBudePristaveny)
+
+                #vyhlasovani pristavovanych spoju
+                for spoj in vyhlasBudePristaveny:
+                    spoj = data.spoje[spoj]
+
+                    #zisti, ci dnes spoj ide
+                    jedeDnes = DatumovaPlatnost(spoj["IDplatnosti"],spoj["obecnaPlatnost"],denVTydnu)
+
+                    #pokial ano,
+                    if jedeDnes:
+                        #a je vela hlasenia vo fronte, alebo je naraz viac ako 5 hlaseni, hlas iba zkratene
+                        if self.soundAPI.vratFrontuHlaseni() > 5 or pocetSpojuBudePristaveny > 5:
+                            zkracene = True
+                        #inak hlas plnu verziu
+                        else:
+                            zkracene = False
+
+                        self.vyhlas.BudePristaveny(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyOdchod"],spoj["casOdchodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
+
+
+                #pole pristavovanych spoju k vyhlaseni podruhe
+                vyhlasBudePristavenyDruhy = data.spojeDlaCasuOdchBudePristavenyDruhe.pop(casPrideDruhy,[])
+
+                #vyhlasovani pristavovanych spoju podruhe
+                for spoj in vyhlasBudePristavenyDruhy:
+                    spoj = data.spoje[spoj]
+                    zkracene = True
+
+                    #zisti, ci dnes spoj ide
+                    jedeDnes = DatumovaPlatnost(spoj["IDplatnosti"],spoj["obecnaPlatnost"],denVTydnu)
+
+                    #pokial ano, vyhlas
+                    if jedeDnes:
+                        self.vyhlas.BudePristaveny(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyOdchod"],spoj["casOdchodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
+            
 
     def vratPoleZastavok(self,trasaID,zkraceny=False,prichodova=False):
         if zkraceny:
@@ -1005,6 +997,7 @@ class HTTP_handler():
 
     def forceStop(self):
         self.stop = True
+        vypis.vypis('Ukoncuji beh HTTP serveru!',1)
         urllib.request.urlopen("http://127.0.0.1:8081")
         return("WEBSERVER EXITED!")
 
@@ -1295,9 +1288,12 @@ class WebServerClass(BaseHTTPRequestHandler):
             
         return
 
+def guiThreadFnc():
+    w = MainWindow()
+    win32gui.PumpMessages()
+
 if __name__ == '__main__':
-    # win32serviceutil.HandleCommandLine(AppServerSvc)
-    
-    w = Window()
     M = Main()
+    guiThread = Thread(target=guiThreadFnc)
+    guiThread.start()
     M.beh()
