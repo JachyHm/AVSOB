@@ -97,7 +97,7 @@
                         var cell = currentRow.getElementsByTagName("td")[4];
                         if (cell && cell.innerHTML != "") {
                             var casOdjezd = moment(cell.innerHTML, "hh:mm");
-                            if (casOdjezd <= moment()) {
+                            if (casOdjezd <= moment() && moment() - casOdjezd < 120) {
                                 cell.className = "blink";
                             }
                         }

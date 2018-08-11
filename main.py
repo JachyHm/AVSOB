@@ -28,6 +28,7 @@ hnedOdideLimit = 0
 data = data.Data()
 vypis = vypis.Vypis()
 vypis.nastavVypis(2)
+vypis.vypis("1.0.1 *-*-*-*-*-*-*-*-*-*-*-*-*",start=True)
 
 def DatumovaPlatnost(IDpodminky,obecnaPlatnost,denVTydnu):
     datumObj = datetime.now()
@@ -211,6 +212,8 @@ class MainWindow():
         elif lparam==win32con.WM_RBUTTONUP:
             #right click
             menu = win32gui.CreatePopupMenu()
+            win32gui.AppendMenu( menu, win32con.MF_STRING, 1021, "Zapni VOIP" )
+            win32gui.AppendMenu( menu, win32con.MF_STRING, 1022, "Vypni VOIP" )
             win32gui.AppendMenu( menu, win32con.MF_STRING, 1023, "Obnov hlasenie")
             win32gui.AppendMenu( menu, win32con.MF_STRING, 1024, "Zastav hlasenie")
             win32gui.AppendMenu( menu, win32con.MF_STRING, 1025, "Ukonci aplikaciu" )
@@ -223,13 +226,20 @@ class MainWindow():
 
     def OnCommand(self, hwnd, msg, wparam, lparam):
         id = win32api.LOWORD(wparam)
-        if id == 1023:
+        if id == 1021:
+            M.soundAPI.zastavHlasenie()
+            V.start()
+        elif id == 1022:
+            V.stop = True
+            M.soundAPI.obnovHlasenie()
+        elif id == 1023:
             # import win32gui_dialog
             # win32gui_dialog.DemoModal()
             M.soundAPI.obnovHlasenie()
         elif id == 1024:
             M.soundAPI.zastavHlasenie()
         elif id == 1025:
+            V.stop = True
             vypis.vypis("Ukoncuji vlakno hlasenie!")
             vypis.vypis(M.soundAPI.zastavHlasenie())
             vypis.vypis(M.server.forceStop())
@@ -242,7 +252,7 @@ class Main():
     def __init__(self):
         self.soundAPI = soundAPI.soundAPI(data)
         self.vyhlas = Vyhlas()
-        vypis.vypis('Inicializacia aplikacie!',1)
+        vypis.vypis('MAIN.init()!',1)
         self.server = HTTP_handler()
         # self.soundAPI.vyhlas(["hlas/SK/start.wav",data.poleHlasenie["SK"]["stanice_umisteni"]])
         hostname = socket.gethostname()
@@ -253,13 +263,13 @@ class Main():
     def beh(self, 
             # objektSluzby
             ):
-        self.vyhlas.BudePristaveny(self,"Mbus","Eurobus",9,"14:06",13,False)
+        # self.vyhlas.BudePristaveny(self,"Mbus","Eurobus",9,"14:06",13,False)
         # self.vyhlas.BudePristaveny(self,"Mbus",2,19,"19:43",13,False,True)
         # self.vyhlas.Stoji(self,"Mbus",2,1,19,"19:43",13,False)
-        self.vyhlas.Stoji(self,"Pbus","Eurobus",1,9,"19:43",13,False,True)
+        # self.vyhlas.Stoji(self,"Pbus","Eurobus",1,9,"19:43",13,False,True)
         # self.vyhlas.OdidePriNast(self,"Mbus",2,19,"19:43",13,False)
-        self.vyhlas.OdidePriNast(self,"Pbus","Eurobus",9,"14:06",13,False,True)
-        self.vyhlas.PrideTranzitny(self,"Mbus","Eurobus",1,19,"19:41","19:43",13,False)
+        # self.vyhlas.OdidePriNast(self,"Pbus","Eurobus",9,"14:06",13,False,True)
+        # self.vyhlas.PrideTranzitny(self,"Mbus","Eurobus",1,19,"19:41","19:43",13,False)
         # self.vyhlas.PrideTranzitny(self,"Mbus","Eurobus",1,9,"19:41","19:43",13,False,True)
         # self.vyhlas.PrichadzaTranzitny(self,"Rbus","Eurobus",1,9,"14:06","14:08",13,False)
         # self.vyhlas.PrichadzaTranzitny(self,"Mbus",2,1,19,"19:41","19:43",13,False,True)
@@ -528,6 +538,7 @@ class Main():
 
 class Vyhlas():
     def BudePristaveny(self,objektMain,typ,spolocnost,trasa,odchod,nastupiste,vAJ,zkraceny=False):
+        vypis.vypis('K nastupisti '+str(nastupiste)+' bude pristaveny '+typ+' spolocnosti '+str(spolocnost)+' ve smeru '+str(trasa)+', odchod '+str(odchod)+'. Zkracene '+str(zkraceny)+'.',1)
         zahlasSubory = []
 
         zahlasSubory.append(data.poleHlasenie["SK"]["typ"][typ])
@@ -567,6 +578,7 @@ class Vyhlas():
         objektMain.soundAPI.pridejHlaseni([zahlasSubory,typPriorita[typ]])
 
     def Stoji(self,objektMain,typ,spolocnost,trasaPrichod,trasaOdchod,odchod,nastupiste,vAJ,zkraceny=False):
+        vypis.vypis('U nastupiste '+str(nastupiste)+' stoji '+typ+' spolocnosti '+str(spolocnost)+' ze smeru '+str(trasaPrichod)+', ve smeru '+str(trasaOdchod)+', odchod '+str(odchod)+'. Zkracene '+str(zkraceny)+'.',1)
         zahlasSubory = []
 
         zahlasSubory.append(data.poleHlasenie["SK"]["typ"][typ])
@@ -606,6 +618,7 @@ class Vyhlas():
         objektMain.soundAPI.pridejHlaseni([zahlasSubory,typPriorita[typ]])
 
     def OdidePriNast(self,objektMain,typ,spolocnost,trasa,odchod,nastupiste,vAJ,zkraceny=False):
+        vypis.vypis('U nastupiste '+str(nastupiste)+' stoji '+typ+' spolocnosti '+str(spolocnost)+', ve smeru '+str(trasa)+', odchod '+str(odchod)+'. Zkracene '+str(zkraceny)+'.',1)
         zahlasSubory = []
 
         zahlasSubory.append(data.poleHlasenie["SK"]["typ"][typ])
@@ -651,6 +664,7 @@ class Vyhlas():
         objektMain.soundAPI.pridejHlaseni([zahlasSubory,typPriorita[typ]])
 
     def PrideTranzitny(self,objektMain,typ,spolocnost,trasaPrichod,trasaOdchod,prichod,odchod,nastupiste,vAJ,zkraceny=False):
+        vypis.vypis('K nastupisti '+str(nastupiste)+' prijde '+typ+' spolocnosti '+str(spolocnost)+' ze smeru '+str(trasaPrichod)+',prichod '+str(prichod)+' ve smeru '+str(trasaOdchod)+', odchod '+str(odchod)+'. Zkracene '+str(zkraceny)+'.',1)
         zahlasSubory = []
 
         zahlasSubory.append(data.poleHlasenie["SK"]["typ"][typ])
@@ -712,6 +726,7 @@ class Vyhlas():
         objektMain.soundAPI.pridejHlaseni([zahlasSubory,typPriorita[typ]])
 
     def PrichadzaTranzitny(self,objektMain,typ,spolocnost,trasaPrichod,trasaOdchod,prichod,odchod,nastupiste,vAJ,zkraceny=False):
+        vypis.vypis('K nastupisti '+str(nastupiste)+' prichadza '+typ+' spolocnosti '+str(spolocnost)+' ze smeru '+str(trasaPrichod)+',prichod '+str(prichod)+' ve smeru '+str(trasaOdchod)+', odchod '+str(odchod)+'. Zkracene '+str(zkraceny)+'.',1)
         zahlasSubory = []
 
         zahlasSubory.append(data.poleHlasenie["SK"]["typ"][typ])
@@ -773,6 +788,7 @@ class Vyhlas():
         objektMain.soundAPI.pridejHlaseni([zahlasSubory,typPriorita[typ]])
 
     def PrisielTranzitny(self,objektMain,typ,spolocnost,trasaPrichod,trasaOdchod,prichod,odchod,nastupiste,vAJ,zkraceny=False,hnedOdide=False):
+        vypis.vypis('K nastupisti '+str(nastupiste)+' prisiel '+typ+' spolocnosti '+str(spolocnost)+' ze smeru '+str(trasaPrichod)+',prichod '+str(prichod)+' ve smeru '+str(trasaOdchod)+', odchod '+str(odchod)+'. Zkracene '+str(zkraceny)+'.',1)
         zahlasSubory = []
 
         zahlasSubory.append(data.poleHlasenie["SK"]["stanice_umisteni"])
@@ -842,6 +858,7 @@ class Vyhlas():
         objektMain.soundAPI.pridejHlaseni([zahlasSubory,typPriorita[typ]])
 
     def PrideKonciaci(self,objektMain,typ,spolocnost,trasaPrichod,prichod,nastupiste,vAJ,zkraceny=False):
+        vypis.vypis('K nastupisti '+str(nastupiste)+' prijde '+typ+' spolocnosti '+str(spolocnost)+' ze smeru '+str(trasaPrichod)+',prichod '+str(prichod)+'. Autobus zde jazdu konci. Zkracene '+str(zkraceny)+'.',1)
         zahlasSubory = []
 
         zahlasSubory.append(data.poleHlasenie["SK"]["typ"][typ])
@@ -884,6 +901,7 @@ class Vyhlas():
         objektMain.soundAPI.pridejHlaseni([zahlasSubory,typPriorita[typ]])
 
     def PrichadzaKonciaci(self,objektMain,typ,spolocnost,trasaPrichod,nastupiste,vAJ,zkraceny=False):
+        vypis.vypis('K nastupisti '+str(nastupiste)+' prichadza '+typ+' spolocnosti '+str(spolocnost)+' ze smeru '+str(trasaPrichod)+',prichod '+str(prichod)+'. Autobus zde jazdu konci. Zkracene '+str(zkraceny)+'.',1)
         zahlasSubory = []
 
         zahlasSubory.append(data.poleHlasenie["SK"]["typ"][typ])
@@ -935,6 +953,7 @@ class Vyhlas():
         # "autobus tu jazdu konci"
 
     def PrisielKonciaci(self,objektMain,typ,spolocnost,trasaPrichod,prichod,nastupiste,vAJ,zkraceny=False):
+        vypis.vypis('K nastupisti '+str(nastupiste)+' prisiel '+typ+' spolocnosti '+str(spolocnost)+' ze smeru '+str(trasaPrichod)+',prichod '+str(prichod)+'. Autobus zde jazdu konci. Zkracene '+str(zkraceny)+'.',1)
         zahlasSubory = []
 
         zahlasSubory.append(data.poleHlasenie["SK"]["stanice_umisteni"])
@@ -1002,6 +1021,13 @@ class HTTP_handler():
         return("WEBSERVER EXITED!")
 
 class WebServerClass(BaseHTTPRequestHandler):
+    def log_message(self, format, message, returnCode, *args):
+        messageArray = message.split(" ")
+        if returnCode == "200":
+            vypis.vypis("Prijaty pozadavek "+messageArray[0]+" od "+self.address_string()+" "+messageArray[1]+" "+messageArray[2]+".")
+        else:
+            vypis.vypis("Prijaty pozadavek "+messageArray[0]+" od "+self.address_string()+" "+messageArray[1]+" "+messageArray[2]+".")
+            vypis.vypis("Subor %s nenajdeny! Vracim kod 404!" % messageArray[1],0)
 
     def do_GET(self):
         try:
@@ -1289,11 +1315,13 @@ class WebServerClass(BaseHTTPRequestHandler):
         return
 
 def guiThreadFnc():
+    vypis.vypis('Inicializacia grafickeho rozhrani!',1)
     w = MainWindow()
     win32gui.PumpMessages()
 
 if __name__ == '__main__':
     M = Main()
+    V = soundAPI.VOIP()
     guiThread = Thread(target=guiThreadFnc)
     guiThread.start()
     M.beh()

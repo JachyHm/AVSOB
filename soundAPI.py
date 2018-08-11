@@ -1,4 +1,4 @@
-﻿"""API hlasenie pre AVSOB"""
+"""API hlasenie pre AVSOB"""
 
 import pyaudio
 import wave
@@ -6,11 +6,56 @@ import sys
 import time
 import vypis
 import threading
+import socket
 from operator import itemgetter
 import signal
 
 # definicia dlzky chunku. Nesmie v zadnom pripade prekrocit 1024 bytes!
-CHUNK = 1024
+CHUNK = 4096
+frames = []
+
+class VOIP():
+    def __init__(self):
+        self.FORMAT = pyaudio.paInt16
+        self.CHUNK = 1024
+        self.CHANNELS = 2
+        self.RATE = 44100
+        self.stop = False
+        self.pVOIP = pyaudio.PyAudio()
+
+    def start(self):
+        self.stop = False
+        Ts = threading.Thread(target = self.udpStream)
+        Ts.start()
+        Tp = threading.Thread(target = self.play)
+        Tp.start()
+
+    def udpStream(self):
+        udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        udp.bind(("127.0.0.1", 46099))
+
+        while not self.stop:
+            soundData, addr = udp.recvfrom(self.CHUNK * self.CHANNELS * 2)
+            frames.append(soundData)
+
+        udp.close()
+    
+    def play(self):
+        self.BUFFER = 10
+        while not self.stop:
+            if len(frames) == self.BUFFER:
+                # M.soundAPI.zastavHlasenie()
+                streamVOIP = self.pVOIP.open(format=self.FORMAT,
+                                channels = self.CHANNELS,
+                                rate = self.RATE,
+                                output = True,
+                                frames_per_buffer = self.CHUNK,
+                                )
+                while len(frames) > 0:
+                    streamVOIP.write(frames.pop(0), self.CHUNK)
+                streamVOIP.stop_stream()
+                streamVOIP.close()
+                # M.soundAPI.obnovHlasenie()
 
 class soundAPI():
     def __init__(self, objektData, prvy=True):
@@ -70,8 +115,8 @@ class soundAPI():
         self.__init__(self.objektData,False)
         
     def vyhlas(self,poleHlaseni):
-        # vytvor objekt PyAudio
         p = pyaudio.PyAudio()
+        # vytvor objekt PyAudio
 
         for soubor in poleHlaseni:
             soubor = self.objektData.poleHlasenie["SK"]["cestaKSuborum"]+soubor
@@ -79,8 +124,7 @@ class soundAPI():
             try:
                 wf = wave.open(soubor, 'rb')
             except:
-                print('Subor "'+soubor+'" nebol nalezeny!')
-                self.vypis.vypis('Subor "'+soubor+'" nebol nalezeny!',1)
+                self.vypis.vypis('Subor "'+soubor+'" nebol nalezeny!',0)
             else:
 
                 # otvor stream

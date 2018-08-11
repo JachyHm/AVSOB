@@ -1,4 +1,4 @@
-﻿import sqlite3
+import sqlite3
 from collections import OrderedDict
 
 cestaKSuborum = "D:/OIS/erik_system/AVSOB/"
