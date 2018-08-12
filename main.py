@@ -28,7 +28,7 @@ hnedOdideLimit = 0
 data = data.Data()
 vypis = vypis.Vypis()
 vypis.nastavVypis(2)
-vypis.vypis("1.0.1 *-*-*-*-*-*-*-*-*-*-*-*-*",start=True)
+vypis.vypis("1.0.1-*-*-*-*-*-*-*-*-*-*-*-*-*-",start=True)
 
 def DatumovaPlatnost(IDpodminky,obecnaPlatnost,denVTydnu):
     datumObj = datetime.now()
@@ -901,7 +901,7 @@ class Vyhlas():
         objektMain.soundAPI.pridejHlaseni([zahlasSubory,typPriorita[typ]])
 
     def PrichadzaKonciaci(self,objektMain,typ,spolocnost,trasaPrichod,nastupiste,vAJ,zkraceny=False):
-        vypis.vypis('K nastupisti '+str(nastupiste)+' prichadza '+typ+' spolocnosti '+str(spolocnost)+' ze smeru '+str(trasaPrichod)+',prichod '+str(prichod)+'. Autobus zde jazdu konci. Zkracene '+str(zkraceny)+'.',1)
+        vypis.vypis('K nastupisti '+str(nastupiste)+' prichadza '+typ+' spolocnosti '+str(spolocnost)+' ze smeru '+str(trasaPrichod)+'. Autobus zde jazdu konci. Zkracene '+str(zkraceny)+'.',1)
         zahlasSubory = []
 
         zahlasSubory.append(data.poleHlasenie["SK"]["typ"][typ])
@@ -1276,7 +1276,7 @@ class WebServerClass(BaseHTTPRequestHandler):
                                         var cell = currentRow.getElementsByTagName("td")[4];
                                         if (cell && cell.innerHTML != "") {
                                             var casOdjezd = moment(cell.innerHTML, "hh:mm");
-                                            if (casOdjezd <= moment()) {
+                                            if (casOdjezd <= moment().add(2,"m") && casOdjezd > moment().subtract(1,"m")) {
                                                 cell.className = "blink";
                                             }
                                         }
@@ -1298,10 +1298,10 @@ class WebServerClass(BaseHTTPRequestHandler):
                     message = f.read()
 
                     #Odosli head zobrazovane stranky
-                    try:
-                        self.send_header('Content-type',self.extensions_map[koncovka.lower])
-                    except:
-                        self.send_header('Content-type','')
+                    # try:
+                    #     self.send_header('Content-type',self.extensions_map[koncovka.lower])
+                    # except:
+                    self.send_header('Content-type','')
 
                     self.end_headers()
             except:
