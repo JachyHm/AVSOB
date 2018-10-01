@@ -14,6 +14,7 @@ import time
 import os
 from datetime import datetime
 import Pyro4
+import Pyro4.naming
 import socket
 from threading import Thread
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -136,6 +137,39 @@ def DatumovaPlatnost(IDpodminky,obecnaPlatnost,denVTydnu):
 
     return jede
 
+def guiThreadFnc():
+    vypis.vypis('Inicializacia grafickeho rozhrani!',1)
+    w = MainWindow()
+    win32gui.PumpMessages()
+
+def AppRun(args = None):
+    win32api.SetConsoleCtrlHandler(on_close_handler, True)
+    global M, P, V
+    M = Main()
+    P = Pyro()
+    V = soundAPI.VOIP()
+    pyroServerThread = Thread(target=P.startPyroServer)
+    pyroServerThread.start()
+    pyroDaemonThread = Thread(target=P.startPyroDaemon)
+    pyroDaemonThread.start()
+    guiThread = Thread(target=guiThreadFnc)
+    guiThread.start()
+    M.beh()
+
+def on_close_handler(ctrl_type):
+    vypis.vypis("Vypinam aplikaciu na pozadavok dispecera!",1)
+    V.stop = True
+    vypis.vypis("Ukoncuji vlakno hlasenie!",1)
+    vypis.vypis(M.soundAPI.zastavHlasenie())
+    vypis.vypis(M.server.forceStop())
+    M.stop = True
+    vypis.vypis("Ukoncuji Pyro objektovy server!",1)
+    P.daemon.shutdown()
+    vypis.vypis("Ukoncuji Pyro name server!",1)
+    P.nameServerDaemon.shutdown()
+    win32gui.DestroyWindow(w.hwnd)
+    return True
+
 class MainWindow():
     def __init__(self):
         msg_TaskbarRestart = win32gui.RegisterWindowMessage("TaskbarCreated")
@@ -227,24 +261,23 @@ class MainWindow():
     def OnCommand(self, hwnd, msg, wparam, lparam):
         id = win32api.LOWORD(wparam)
         if id == 1021:
+            vypis.vypis("Zastavuji hlasenie, pretoze pozadavok na VoIP!",1)
             M.soundAPI.zastavHlasenie()
+            vypis.vypis("Aktivuji VoIP!",1)
             V.start()
         elif id == 1022:
+            vypis.vypis("Vypinam VoIP!",1)
             V.stop = True
+            vypis.vypis("Obnovuji hlasenie!",1)
             M.soundAPI.obnovHlasenie()
         elif id == 1023:
-            # import win32gui_dialog
-            # win32gui_dialog.DemoModal()
+            vypis.vypis("Obnovuji hlasenie!",1)
             M.soundAPI.obnovHlasenie()
         elif id == 1024:
+            vypis.vypis("Zastavuji hlasenie, pretoze manualna volba!",1)
             M.soundAPI.zastavHlasenie()
         elif id == 1025:
-            V.stop = True
-            vypis.vypis("Ukoncuji vlakno hlasenie!")
-            vypis.vypis(M.soundAPI.zastavHlasenie())
-            vypis.vypis(M.server.forceStop())
-            M.stop = True
-            win32gui.DestroyWindow(self.hwnd)
+            on_close_handler(0)
         else:
             print("Unknown command -", id)
 
@@ -522,7 +555,6 @@ class Main():
                     #pokial ano, vyhlas
                     if jedeDnes:
                         self.vyhlas.BudePristaveny(self,spoj["typ"],spoj["IDdopravca"],spoj["IDtrasyOdchod"],spoj["casOdchodu"],spoj["nastupiste"],spoj["hlasEN"],zkracene)
-            
 
     def vratPoleZastavok(self,trasaID,zkraceny=False,prichodova=False):
         if zkraceny:
@@ -535,6 +567,11 @@ class Main():
             for zastavka in data.trasy[trasaID]:
                 poleZastavok.append(zastavka)
             return poleZastavok
+
+@Pyro4.expose
+class Remote(object):
+    def vratVsechnySpoje(self):
+        return data.spojeDlaCasuOdch
 
 class Vyhlas():
     def BudePristaveny(self,objektMain,typ,spolocnost,trasa,odchod,nastupiste,vAJ,zkraceny=False):
@@ -1065,21 +1102,21 @@ class WebServerClass(BaseHTTPRequestHandler):
                 spoj = data.spoje[spoj]
                 
                 stringPrichod = ""
+                stringVychozi = ""
                 trasaPrichod = spoj["IDtrasyPrichod"]
                 stringOdchod = ""
+                stringCilova = ""
                 trasaOdchod = spoj["IDtrasyOdchod"]
 
                 if trasaPrichod != 0:
                     trasaPrichod = data.trasy[trasaPrichod]
                     stringPrichod = " - ".join(str(data.zastavky[v]) for v in trasaPrichod)
-                else:
-                    trasaPrichod = {}
+                    stringVychozi = str(data.zastavky[trasaPrichod[-1]])
 
                 if trasaOdchod != 0:
                     trasaOdchod = data.trasy[trasaOdchod]
                     stringOdchod = " - ".join(str(data.zastavky[v]) for v in trasaOdchod)
-                else:
-                    trasaOdchod = {}
+                    stringCilova = str(data.zastavky[trasaOdchod[-1]])
 
                 if spoj["casOdchodu"] == 0:
                     if int(str(spoj['casPrichodu']).replace(":", "")) < cas:
@@ -1088,41 +1125,40 @@ class WebServerClass(BaseHTTPRequestHandler):
                     continue
                 elif not DatumovaPlatnost(spoj["IDplatnosti"],spoj["obecnaPlatnost"],denVTydnu):
                     continue
-                
-                spojePocet = spojePocet + 1
-                if spojePocet > 10:
-                    break
 
                 if spoj["casPrichodu"] == 0:
                     stringSpoje = stringSpoje + '''<tr>
                                                     <td>'''+str(spoj["linka"])+'''</td>
-                                                    <td></td>
-                                                    <td></td>
+                                                    <td>'''+stringCilova+'''</td>
                                                     <td><marquee>'''+stringOdchod+'''</marquee></td>
                                                     <td>'''+str(spoj["casOdchodu"])+'''</td>
                                                     <td>'''+str(spoj["nastupiste"])+'''</td>
                                                     <td>*</td>
                                                 </tr>'''
                 elif spoj["casOdchodu"] == 0:
-                    stringSpoje = stringSpoje + '''<tr>
-                                                    <td>'''+str(spoj["linka"])+'''</td>
-                                                    <td><marquee>'''+stringPrichod+'''</marquee></td>
-                                                    <td>'''+str(spoj["casPrichodu"])+'''</td>
-                                                    <td></td>
-                                                    <td></td>
-                                                    <td>'''+str(spoj["nastupiste"])+'''</td>
-                                                    <td>*</td>
-                                                </tr>'''
+                    continue
+                    # stringSpoje = stringSpoje + '''<tr>
+                    #                                 <td>'''+str(spoj["linka"])+'''</td>
+                    #                                 <td>'''+stringVychozi+'''</td>
+                    #                                 <td><marquee>'''+stringPrichod+'''</marquee></td>
+                    #                                 <td>'''+str(spoj["casOdchodu"])+'''</td>
+                    #                                 <td>'''+str(spoj["nastupiste"])+'''</td>
+                    #                                 <td>*</td>
+                    #                             </tr>'''
                 else:
                     stringSpoje = stringSpoje + '''<tr>
                                                     <td>'''+str(spoj["linka"])+'''</td>
-                                                    <td><marquee>'''+stringOdchod+'''</marquee></td>
-                                                    <td>'''+str(spoj["casPrichodu"])+'''</td>
+                                                    <td>'''+stringCilova+'''</td>
                                                     <td><marquee>'''+stringOdchod+'''</marquee></td>
                                                     <td>'''+str(spoj["casOdchodu"])+'''</td>
                                                     <td>'''+str(spoj["nastupiste"])+'''</td>
                                                     <td>*</td>
-                                                </tr>'''                            
+                                                </tr>'''     
+                
+                spojePocet = spojePocet + 1
+                if spojePocet > 9:
+                    break       
+
             if spojePocet < 10:
                 localtime = time.localtime(time.time()+24*60*60)
                 denVTydnu = str(localtime.tm_wday)
@@ -1130,8 +1166,10 @@ class WebServerClass(BaseHTTPRequestHandler):
                     spoj = data.spoje[spoj]
                     
                     stringPrichod = ""
+                    stringVychozi = ""
                     trasaPrichod = spoj["IDtrasyPrichod"]
                     stringOdchod = ""
+                    stringCilova = ""
                     trasaOdchod = spoj["IDtrasyOdchod"]
 
                     if not DatumovaPlatnost(spoj["IDplatnosti"],spoj["obecnaPlatnost"],denVTydnu):
@@ -1140,49 +1178,44 @@ class WebServerClass(BaseHTTPRequestHandler):
                     if trasaPrichod != 0:
                         trasaPrichod = data.trasy[trasaPrichod]
                         stringPrichod = " - ".join(str(data.zastavky[v]) for v in trasaPrichod)
-                    else:
-                        trasaPrichod = {}
+                        stringVychozi = str(data.zastavky[trasaPrichod[-1]])
 
                     if trasaOdchod != 0:
                         trasaOdchod = data.trasy[trasaOdchod]
                         stringOdchod = " - ".join(str(data.zastavky[v]) for v in trasaOdchod)
-                    else:
-                        trasaOdchod = {}
-                    
-                    spojePocet = spojePocet + 1
-                    if spojePocet > 10:
-                        break
+                        stringCilova = str(data.zastavky[trasaOdchod[-1]])
 
                     if spoj["casPrichodu"] == 0:
                         stringSpoje = stringSpoje + '''<tr>
                                                         <td>'''+str(spoj["linka"])+'''</td>
-                                                        <td></td>
-                                                        <td></td>
+                                                        <td>'''+stringCilova+'''</td>
                                                         <td><marquee>'''+stringOdchod+'''</marquee></td>
                                                         <td>'''+str(spoj["casOdchodu"])+'''</td>
                                                         <td>'''+str(spoj["nastupiste"])+'''</td>
                                                         <td>*</td>
-                                                    </tr>'''
+                                                    </tr>'''  
                     elif spoj["casOdchodu"] == 0:
-                        stringSpoje = stringSpoje + '''<tr>
-                                                        <td>'''+str(spoj["linka"])+'''</td>
-                                                        <td><marquee>'''+stringPrichod+'''</marquee></td>
-                                                        <td>'''+str(spoj["casPrichodu"])+'''</td>
-                                                        <td></td>
-                                                        <td></td>
-                                                        <td>'''+str(spoj["nastupiste"])+'''</td>
-                                                        <td>*</td>
-                                                    </tr>'''
+                        continue
+                        # stringSpoje = stringSpoje + '''<tr>
+                        #                                 <td>'''+str(spoj["linka"])+'''</td>
+                        #                                 <td>'''+stringVychozi+'''</td>
+                        #                                 <td><marquee>'''+stringPrichod+'''</marquee></td>
+                        #                                 <td>'''+str(spoj["casOdchodu"])+'''</td>
+                        #                                 <td>'''+str(spoj["nastupiste"])+'''</td>
+                        #                                 <td>*</td>
+                        #                             </tr>'''
                     else:
                         stringSpoje = stringSpoje + '''<tr>
                                                         <td>'''+str(spoj["linka"])+'''</td>
-                                                        <td><marquee>'''+stringOdchod+'''</marquee></td>
-                                                        <td>'''+str(spoj["casPrichodu"])+'''</td>
+                                                        <td>'''+stringCilova+'''</td>
                                                         <td><marquee>'''+stringOdchod+'''</marquee></td>
                                                         <td>'''+str(spoj["casOdchodu"])+'''</td>
                                                         <td>'''+str(spoj["nastupiste"])+'''</td>
                                                         <td>*</td>
-                                                    </tr>'''    
+                                                    </tr>'''   
+                    spojePocet = spojePocet + 1
+                    if spojePocet > 9:
+                        break
 
             #Odosli telo zpravy
             message = '''<!DOCTYPE html>
@@ -1234,19 +1267,18 @@ class WebServerClass(BaseHTTPRequestHandler):
                             <div id="hlavicka" class="container-fluid bg-hlavicka">
                                 <div class="container-fluid">
                                     <h1>
-                                        <div id="nadpis">Stanice TEST</div>
+                                        <div id="nadpis">Stanice TEST - odchody</div>
                                     </h1>
                                 </div>
                             </div>
                             <div id="prichody" class="prichody">
                                 <div class="table-responsive">
-                                    <table id="tabulkaAutobusy" class="table table-hover">
+                                    <table id="tabulkaAutobusy" class="table table-hover" style="white-space:nowrap;">
                                         <thead class="thead-dark">
                                             <tr>
                                                 <th scope="col">Linka</th>
-                                                <th scope="col">Zo smeru</th>
-                                                <th scope="col">Príchod</th>
                                                 <th scope="col">Smer</th>
+                                                <th scope="col">Cez</th>
                                                 <th scope="col">Odchod</th>
                                                 <th scope="col">Nástupiste</th>
                                                 <th scope="col">Meskanie</th>
@@ -1314,14 +1346,21 @@ class WebServerClass(BaseHTTPRequestHandler):
             
         return
 
-def guiThreadFnc():
-    vypis.vypis('Inicializacia grafickeho rozhrani!',1)
-    w = MainWindow()
-    win32gui.PumpMessages()
+class Pyro():
+    def __init__(self):
+        self.daemon = Pyro4.Daemon()
+
+    def startPyroDaemon(self):
+        self.nameServer = Pyro4.locateNS()
+        self.remoteClassUri = self.daemon.register(Remote)
+        self.nameServer.register("AVSOB.remote",self.remoteClassUri)
+        self.daemon.requestLoop()
+        vypis.vypis("PYRO OBJECT SERVER EXITED!",1)
+
+    def startPyroServer(self):
+        self.nameServerURI, self.nameServerDaemon, self.nameServerBCS = Pyro4.naming.startNS()
+        self.nameServerDaemon.requestLoop()
+        vypis.vypis("PYRO NAME SERVER EXITED!",1)
 
 if __name__ == '__main__':
-    M = Main()
-    V = soundAPI.VOIP()
-    guiThread = Thread(target=guiThreadFnc)
-    guiThread.start()
-    M.beh()
+    AppRun()
